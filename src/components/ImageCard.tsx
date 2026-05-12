@@ -5,12 +5,10 @@ import {
   Download,
   FlipHorizontal,
   FlipVertical,
-  Lock,
   MoreHorizontal,
   RotateCw,
   SlidersHorizontal,
   Trash2,
-  Unlock,
   X,
 } from 'lucide-react';
 import type { ProcessedImage, ImageTransformations } from '../types/image';
@@ -24,7 +22,6 @@ interface ImageCardProps {
   onUpdateTransform: (id: string, transform: Partial<ImageTransformations>) => void;
 }
 
-type ResizeUnit = 'px' | '%';
 type CropMode = 'free' | '1:1' | '4:3' | '16:9' | '3:2';
 type DragMode = 'move' | 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
@@ -98,11 +95,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
     w: image.originalWidth,
     h: image.originalHeight,
   });
-  const [resizeUnit, setResizeUnit] = useState<ResizeUnit>('px');
-  const [aspectLocked, setAspectLocked] = useState(true);
-  const [widthDraft, setWidthDraft] = useState('');
-  const [heightDraft, setHeightDraft] = useState('');
-  const [fitEdge, setFitEdge] = useState('');
 
   const baseSize = useMemo(() => {
     const crop = currentTransformations.crop;
@@ -111,23 +103,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
       h: Math.round(crop?.h || image.originalHeight),
     };
   }, [currentTransformations.crop, image.originalHeight, image.originalWidth]);
-
-  const resizeDefaults = useMemo(() => {
-    if (resizeUnit === 'px') {
-      return {
-        width: String(currentTransformations.width || baseSize.w),
-        height: String(currentTransformations.height || baseSize.h),
-      };
-    }
-
-    return {
-      width: String(Math.round(((currentTransformations.width || baseSize.w) / baseSize.w) * 100)),
-      height: String(Math.round(((currentTransformations.height || baseSize.h) / baseSize.h) * 100)),
-    };
-  }, [baseSize, currentTransformations.height, currentTransformations.width, resizeUnit]);
-
-  const displayedWidthDraft = widthDraft || resizeDefaults.width;
-  const displayedHeightDraft = heightDraft || resizeDefaults.height;
 
   useEffect(() => {
     let cancelled = false;
@@ -341,55 +316,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
     };
   };
 
-  const applyResize = (widthValue: string, heightValue: string, changed: 'w' | 'h') => {
-    const widthNumber = Number(widthValue);
-    const heightNumber = Number(heightValue);
-    const primary = changed === 'w' ? widthNumber : heightNumber;
-    if (!Number.isFinite(primary) || primary <= 0) return;
-    if (!aspectLocked) {
-      if (!Number.isFinite(widthNumber) || widthNumber <= 0) return;
-      if (!Number.isFinite(heightNumber) || heightNumber <= 0) return;
-    }
-
-    if (resizeUnit === '%') {
-      const nextWPercent = aspectLocked && changed === 'h' ? heightNumber : widthNumber;
-      const nextHPercent = aspectLocked ? nextWPercent : heightNumber;
-      if (aspectLocked && changed === 'h') setWidthDraft(String(Math.round(nextWPercent)));
-      if (aspectLocked && changed === 'w') setHeightDraft(String(Math.round(nextHPercent)));
-      onUpdateTransform(image.id, {
-        width: Math.max(1, Math.round(baseSize.w * (nextWPercent / 100))),
-        height: Math.max(1, Math.round(baseSize.h * (nextHPercent / 100))),
-      });
-      return;
-    }
-
-    const nextWidth = changed === 'h' && aspectLocked ? Math.round(heightNumber * (baseSize.w / baseSize.h)) : widthNumber;
-    const nextHeight = changed === 'w' && aspectLocked ? Math.round(widthNumber * (baseSize.h / baseSize.w)) : heightNumber;
-
-    if (aspectLocked && changed === 'w') setHeightDraft(String(nextHeight));
-    if (aspectLocked && changed === 'h') setWidthDraft(String(nextWidth));
-
-    onUpdateTransform(image.id, {
-      width: Math.max(1, Math.round(nextWidth)),
-      height: Math.max(1, Math.round(nextHeight)),
-    });
-  };
-
-  const applyFitEdge = () => {
-    const edge = Number(fitEdge);
-    if (!Number.isFinite(edge) || edge <= 0) return;
-
-    const next =
-      baseSize.w >= baseSize.h
-        ? { width: Math.round(edge), height: Math.round(edge * (baseSize.h / baseSize.w)) }
-        : { width: Math.round(edge * (baseSize.w / baseSize.h)), height: Math.round(edge) };
-
-    setResizeUnit('px');
-    setWidthDraft(String(next.width));
-    setHeightDraft(String(next.height));
-    onUpdateTransform(image.id, next);
-  };
-
   const cropDisplay = cropOpen ? displayRect(draftCrop) : null;
 
   return (
@@ -578,77 +504,6 @@ export const ImageCard: React.FC<ImageCardProps> = ({
 
         {adjustOpen && (
           <div className="space-y-4 rounded-2xl border border-charcoal/5 bg-charcoal/[0.02] p-3">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase text-charcoal/45">Resize</label>
-                <div className="flex rounded-full bg-white p-1 text-[10px] font-bold">
-                  {(['px', '%'] as ResizeUnit[]).map((unit) => (
-                    <button
-                      key={unit}
-                      type="button"
-                      onClick={() => {
-                        setResizeUnit(unit);
-                        setWidthDraft('');
-                        setHeightDraft('');
-                      }}
-                      className={`rounded-full px-2 py-1 ${resizeUnit === unit ? 'bg-auburn text-white' : 'text-charcoal/45'}`}
-                    >
-                      {unit}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={displayedWidthDraft}
-                  onChange={(event) => {
-                    setWidthDraft(event.target.value);
-                    applyResize(event.target.value, displayedHeightDraft, 'w');
-                  }}
-                  className="min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 text-xs outline-none focus:border-auburn"
-                  aria-label="Width"
-                />
-                <button
-                  type="button"
-                  onClick={() => setAspectLocked((value) => !value)}
-                  className="rounded-xl border border-charcoal/10 bg-white p-2 text-charcoal/50"
-                  title={aspectLocked ? 'Unlock aspect ratio' : 'Lock aspect ratio'}
-                >
-                  {aspectLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-                </button>
-                <input
-                  type="number"
-                  min="1"
-                  value={displayedHeightDraft}
-                  onChange={(event) => {
-                    setHeightDraft(event.target.value);
-                    applyResize(displayedWidthDraft, event.target.value, 'h');
-                  }}
-                  className="min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 text-xs outline-none focus:border-auburn"
-                  aria-label="Height"
-                />
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Longest edge"
-                  value={fitEdge}
-                  onChange={(event) => setFitEdge(event.target.value)}
-                  className="min-w-0 flex-1 rounded-xl border border-charcoal/10 px-3 py-2 text-xs outline-none focus:border-auburn"
-                />
-                <button
-                  type="button"
-                  onClick={applyFitEdge}
-                  className="rounded-xl bg-charcoal px-3 py-2 text-[10px] font-bold text-white"
-                >
-                  Fit
-                </button>
-              </div>
-            </div>
-
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase text-charcoal/45">Format</label>
               <div className="grid grid-cols-3 gap-2">

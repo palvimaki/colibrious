@@ -80,7 +80,6 @@ function App() {
     const edge = Number(batchFitEdge);
     if (!Number.isFinite(edge) || edge <= 0) return;
 
-    setBatchResizeUnit('px');
     images.forEach((image) => {
       const base = getBaseSize(image);
       const resize =
@@ -134,11 +133,14 @@ function App() {
             {/* Sidebar Settings */}
             <div className="lg:col-span-1 space-y-6">
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-charcoal/5 sticky top-24">
-                <div className="flex items-center gap-2 mb-6">
+                <div className="mb-6 flex items-start gap-2">
                   <div className="p-2 bg-orange-accent/10 rounded-lg">
                     <Settings2 className="w-5 h-5 text-orange-accent" />
                   </div>
-                  <h2 className="font-bold text-charcoal">Batch Settings</h2>
+                  <div>
+                    <h2 className="font-bold text-charcoal">Batch Settings</h2>
+                    <p className="text-[10px] text-charcoal/40">Applies to all images. Crop is per-image.</p>
+                  </div>
                 </div>
 
                 <div className="space-y-6">
@@ -168,7 +170,7 @@ function App() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40">
-                        Resize
+                        Set exact dimensions
                       </label>
                       <div className="flex rounded-full bg-charcoal/[0.04] p-1 text-[10px] font-bold">
                         {(['px', '%'] as ResizeUnit[]).map((unit) => (
@@ -221,22 +223,36 @@ function App() {
                         aria-label="Batch height"
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Longest edge"
-                        value={batchFitEdge}
-                        onChange={(event) => setBatchFitEdge(event.target.value)}
-                        className="min-w-0 flex-1 rounded-xl border border-charcoal/10 px-3 py-2 text-xs outline-none focus:border-auburn"
-                      />
-                      <button
-                        type="button"
-                        onClick={applyBatchFitEdge}
-                        className="rounded-xl bg-charcoal px-3 py-2 text-[10px] font-bold text-white"
-                      >
-                        Fit
-                      </button>
+                    <div className="space-y-2 border-t border-charcoal/5 pt-3">
+                      <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40">
+                        Or fit by longest side
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative min-w-0 flex-1">
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="1920"
+                            value={batchFitEdge}
+                            onChange={(event) => setBatchFitEdge(event.target.value)}
+                            className="w-full min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 pr-8 text-xs outline-none focus:border-auburn"
+                            aria-label="Batch longest side in pixels"
+                          />
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-charcoal/40">
+                            px
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={applyBatchFitEdge}
+                          className="rounded-xl bg-charcoal px-3 py-2 text-[10px] font-bold text-white"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                      <p className="text-[10px] leading-snug text-charcoal/50">
+                        Scales each image so its longer side equals this. Aspect ratio preserved.
+                      </p>
                     </div>
                   </div>
 
