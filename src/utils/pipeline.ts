@@ -93,6 +93,10 @@ const sanitizeResize = (resize: PipelineOps['resize'] | undefined, fallback: Cro
 });
 
 const applyPixelFilters = (canvas: CanvasLike, ops: PipelineOps) => {
+  if (ops.brightness === 100 && ops.contrast === 100 && !ops.grayscale && !ops.sepia) {
+    return canvas;
+  }
+
   const ctx = get2d(canvas);
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
@@ -131,6 +135,7 @@ const applyPixelFilters = (canvas: CanvasLike, ops: PipelineOps) => {
   }
 
   ctx.putImageData(imageData, 0, 0);
+  return canvas;
 };
 
 const drawWatermark = (canvas: CanvasLike, ops: PipelineOps) => {
@@ -181,10 +186,10 @@ export const runPipeline: Pipeline = async (source, ops) => {
   outputCtx.drawImage(cropResizeCanvas as Drawable, -resized.w / 2, -resized.h / 2);
   outputCtx.restore();
 
-  applyPixelFilters(outputCanvas, ops);
-  drawWatermark(outputCanvas, ops);
+  const filteredCanvas = applyPixelFilters(outputCanvas, ops);
+  drawWatermark(filteredCanvas, ops);
 
-  const blob = await canvasToBlob(outputCanvas, ops.format, ops.quality);
+  const blob = await canvasToBlob(filteredCanvas, ops.format, ops.quality);
   return { blob, width: outputWidth, height: outputHeight };
 };
 

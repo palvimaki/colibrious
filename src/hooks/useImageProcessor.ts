@@ -35,22 +35,33 @@ export const useImageProcessor = () => {
   const [images, setImages] = useState<ProcessedImage[]>([]);
 
   const addFiles = useCallback(async (files: File[]) => {
-    const newImages = await Promise.all(
+    const results = await Promise.allSettled(
       files.map(async (file) => {
         const previewUrl = URL.createObjectURL(file);
-        const dimensions = await loadDimensions(previewUrl);
+        try {
+          const dimensions = await loadDimensions(previewUrl);
 
-        return {
-          id: Math.random().toString(36).slice(2, 11),
-          originalFile: file,
-          previewUrl,
-          originalWidth: dimensions.width,
-          originalHeight: dimensions.height,
-          currentTransformations: { ...DEFAULT_TRANSFORMATIONS },
-          isProcessing: false,
-        };
+          return {
+            id: Math.random().toString(36).slice(2, 11),
+            originalFile: file,
+            previewUrl,
+            originalWidth: dimensions.width,
+            originalHeight: dimensions.height,
+            currentTransformations: { ...DEFAULT_TRANSFORMATIONS },
+            isProcessing: false,
+          };
+        } catch {
+          URL.revokeObjectURL(previewUrl);
+          throw new Error(file.name);
+        }
       })
     );
+    const newImages = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
+    const failedNames = results.flatMap((result, index) => (result.status === 'rejected' ? [files[index].name] : []));
+
+    if (failedNames.length > 0) {
+      console.warn('Failed to add image files:', failedNames);
+    }
 
     setImages((prev) => [...prev, ...newImages]);
   }, []);
@@ -70,7 +81,6 @@ export const useImageProcessor = () => {
       const imgToRemove = prev.find((img) => img.id === id);
       if (imgToRemove) {
         URL.revokeObjectURL(imgToRemove.previewUrl);
-        if (imgToRemove.processedUrl) URL.revokeObjectURL(imgToRemove.processedUrl);
       }
       return prev.filter((img) => img.id !== id);
     });
@@ -84,8 +94,12 @@ export const useImageProcessor = () => {
 
     try {
       const source = await decodeImage(img.originalFile);
-      const result = await runPipeline(source, toPipelineOps(img.currentTransformations));
-      source.close();
+      let result: Awaited<ReturnType<typeof runPipeline>>;
+      try {
+        result = await runPipeline(source, toPipelineOps(img.currentTransformations));
+      } finally {
+        source.close();
+      }
 
       setImages((prev) =>
         prev.map((i) =>
@@ -116,7 +130,6 @@ export const useImageProcessor = () => {
   const clearImages = useCallback(() => {
     images.forEach((img) => {
       URL.revokeObjectURL(img.previewUrl);
-      if (img.processedUrl) URL.revokeObjectURL(img.processedUrl);
     });
     setImages([]);
   }, [images]);

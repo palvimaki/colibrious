@@ -371,8 +371,4 @@ function App() {
   );
 }
 
-// Add types for setImages which was missing in useImageProcessor return
-// Actually I'll just use a small hack or fix the hook.
-// For now I'll just keep it simple.
-
 export default App;

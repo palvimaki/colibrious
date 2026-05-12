@@ -136,8 +136,12 @@ export const ImageCard: React.FC<ImageCardProps> = ({
       try {
         setIsPreviewing(true);
         const source = await decodeImage(image.originalFile);
-        const result = await runPipeline(source, toPipelineOps(currentTransformations));
-        source.close();
+        let result: Awaited<ReturnType<typeof runPipeline>>;
+        try {
+          result = await runPipeline(source, toPipelineOps(currentTransformations));
+        } finally {
+          source.close();
+        }
         const nextUrl = URL.createObjectURL(result.blob);
 
         if (cancelled) {

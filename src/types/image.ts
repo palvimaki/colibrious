@@ -27,7 +27,6 @@ export interface ProcessedImage {
   originalHeight: number;
   currentTransformations: ImageTransformations;
   isProcessing: boolean;
-  processedUrl?: string;
 }
 
 export const DEFAULT_TRANSFORMATIONS: ImageTransformations = {
