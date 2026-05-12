@@ -1,20 +1,57 @@
 import { useState, useCallback } from 'react';
 import { DEFAULT_TRANSFORMATIONS } from '../types/image';
 import type { ProcessedImage, ImageTransformations } from '../types/image';
-import { processImageOnCanvas, loadImage } from '../utils/canvasHelper';
+import { decodeImage, runPipeline } from '../utils/pipeline';
 import { saveAs } from 'file-saver';
+
+const loadDimensions = (url: string) =>
+  new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = reject;
+    img.src = url;
+  });
+
+const toPipelineOps = (transformations: ImageTransformations) => ({
+  crop: transformations.crop,
+  resize:
+    transformations.width && transformations.height
+      ? { w: transformations.width, h: transformations.height }
+      : undefined,
+  rotation: transformations.rotation,
+  flipH: transformations.flipHorizontal,
+  flipV: transformations.flipVertical,
+  brightness: transformations.brightness,
+  contrast: transformations.contrast,
+  grayscale: transformations.grayscale,
+  sepia: transformations.sepia,
+  format: transformations.format,
+  quality: transformations.quality,
+  watermarkText: transformations.watermarkText,
+  watermarkOpacity: transformations.watermarkOpacity,
+});
 
 export const useImageProcessor = () => {
   const [images, setImages] = useState<ProcessedImage[]>([]);
 
-  const addFiles = useCallback((files: File[]) => {
-    const newImages: ProcessedImage[] = files.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      originalFile: file,
-      previewUrl: URL.createObjectURL(file),
-      currentTransformations: { ...DEFAULT_TRANSFORMATIONS },
-      isProcessing: false,
-    }));
+  const addFiles = useCallback(async (files: File[]) => {
+    const newImages = await Promise.all(
+      files.map(async (file) => {
+        const previewUrl = URL.createObjectURL(file);
+        const dimensions = await loadDimensions(previewUrl);
+
+        return {
+          id: Math.random().toString(36).slice(2, 11),
+          originalFile: file,
+          previewUrl,
+          originalWidth: dimensions.width,
+          originalHeight: dimensions.height,
+          currentTransformations: { ...DEFAULT_TRANSFORMATIONS },
+          isProcessing: false,
+        };
+      })
+    );
+
     setImages((prev) => [...prev, ...newImages]);
   }, []);
 
@@ -46,18 +83,18 @@ export const useImageProcessor = () => {
     setImages((prev) => prev.map((i) => (i.id === id ? { ...i, isProcessing: true } : i)));
 
     try {
-      const source = await loadImage(img.previewUrl);
-      const blob = await processImageOnCanvas(source, img.currentTransformations);
-      const processedUrl = URL.createObjectURL(blob);
+      const source = await decodeImage(img.originalFile);
+      const result = await runPipeline(source, toPipelineOps(img.currentTransformations));
+      source.close();
 
       setImages((prev) =>
         prev.map((i) =>
           i.id === id
-            ? { ...i, isProcessing: false, processedUrl }
+            ? { ...i, isProcessing: false }
             : i
         )
       );
-      return blob;
+      return result.blob;
     } catch (error) {
       console.error('Processing failed:', error);
       setImages((prev) => prev.map((i) => (i.id === id ? { ...i, isProcessing: false } : i)));

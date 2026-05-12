@@ -1,0 +1,1 @@
+2026-05-12: Shipped the unified canvas preview/download pipeline, resize controls, crop overlay, live output badges, and PNG lossless quality UI; Safari Apple Events were blocked so verification used a temporary Safari-loaded pipeline probe; leftover TODOs: none inside Sprint 1 scope.

@@ -1,7 +1,10 @@
+import type { CropRect, Rotation } from '../utils/pipeline';
+
 export interface ImageTransformations {
   width?: number;
   height?: number;
-  rotation: number;
+  crop?: CropRect;
+  rotation: Rotation;
   flipHorizontal: boolean;
   flipVertical: boolean;
   brightness: number;
@@ -20,6 +23,8 @@ export interface ProcessedImage {
   id: string;
   originalFile: File;
   previewUrl: string;
+  originalWidth: number;
+  originalHeight: number;
   currentTransformations: ImageTransformations;
   isProcessing: boolean;
   processedUrl?: string;
