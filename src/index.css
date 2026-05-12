@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+:root {
+  --color-auburn: #A52A2A;
+  --color-cream: #FFFDD0;
+  --color-charcoal: #333333;
+  --color-orange-accent: #FF8C00;
+}
+
+body {
+  background-color: #fcf9f2; /* Soft cream background */
+  color: var(--color-charcoal);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@theme {
+  --color-auburn: var(--color-auburn);
+  --color-cream: var(--color-cream);
+  --color-charcoal: var(--color-charcoal);
+  --color-orange-accent: var(--color-orange-accent);
+}
