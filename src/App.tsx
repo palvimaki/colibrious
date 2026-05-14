@@ -257,8 +257,8 @@ function App() {
                   Kuvankäsittelyä <span className="text-auburn">selaimessa.</span>
                 </h1>
                 <p className="text-charcoal/60 text-base sm:text-lg leading-relaxed max-w-lg">
-                  Muunna kuvia, muuta kuvan kokoa, lisää vesileimoja — kaikki suoraan selaimessasi.
-                  Ei kirjautumista, toimii ilman verkkoa.
+                  Muokkaa, muuta kokoa, pyöritä, muuta PDF:ksi, lisää vesileimoja — kaikki
+                  suoraan selaimessasi. Ei kirjautumista, toimii ilman verkkoa.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-charcoal/55">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
