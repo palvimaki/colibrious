@@ -53,6 +53,7 @@ const toPipelineOps = (transformations: ImageTransformations) => ({
 export const useImageProcessor = () => {
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [errors, setErrors] = useState<FileError[]>([]);
+  const [isBuildingPdf, setIsBuildingPdf] = useState(false);
 
   const pushError = useCallback((entry: FileError) => {
     setErrors((prev) => [...prev, entry]);
@@ -179,6 +180,53 @@ export const useImageProcessor = () => {
     [images, processImage]
   );
 
+  const downloadAllAsPdf = useCallback(async () => {
+    if (images.length === 0 || isBuildingPdf) return;
+    setIsBuildingPdf(true);
+    try {
+      const { PDFDocument } = await import('pdf-lib');
+      const pdf = await PDFDocument.create();
+
+      for (const img of images) {
+        try {
+          const source = await decodeImage(img.originalFile);
+          let result: Awaited<ReturnType<typeof runPipeline>>;
+          try {
+            const ops = toPipelineOps(img.currentTransformations);
+            result = await runPipeline(source, {
+              ...ops,
+              format: 'image/jpeg',
+              quality: img.currentTransformations.quality || 0.92,
+            });
+          } finally {
+            source.close();
+          }
+          const bytes = new Uint8Array(await result.blob.arrayBuffer());
+          const embedded = await pdf.embedJpg(bytes);
+          const page = pdf.addPage([embedded.width, embedded.height]);
+          page.drawImage(embedded, { x: 0, y: 0, width: embedded.width, height: embedded.height });
+        } catch (error) {
+          pushError({
+            file: img.originalFile.name,
+            reason: error instanceof Error ? error.message : 'PDF-sivun lisääminen epäonnistui.',
+          });
+        }
+      }
+
+      if (pdf.getPageCount() === 0) return;
+      const pdfBytes = await pdf.save();
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+      saveAs(blob, `kuvankasittely-${pdf.getPageCount()}-kuvaa.pdf`);
+    } catch (error) {
+      pushError({
+        file: 'PDF',
+        reason: error instanceof Error ? error.message : 'PDF:n luonti epäonnistui.',
+      });
+    } finally {
+      setIsBuildingPdf(false);
+    }
+  }, [images, isBuildingPdf, pushError]);
+
   const clearImages = useCallback(() => {
     images.forEach((img) => {
       URL.revokeObjectURL(img.previewUrl);
@@ -189,12 +237,14 @@ export const useImageProcessor = () => {
   return {
     images,
     errors,
+    isBuildingPdf,
     clearErrors,
     addFiles,
     updateTransformations,
     removeImage,
     processImage,
     downloadImage,
+    downloadAllAsPdf,
     clearImages,
   };
 };

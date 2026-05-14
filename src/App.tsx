@@ -14,6 +14,7 @@ import {
   Lock,
   Unlock,
   ShieldCheck,
+  FileText,
 } from 'lucide-react';
 
 const GithubIcon = ({ className = '' }: { className?: string }) => (
@@ -33,10 +34,12 @@ function App() {
   const {
     images,
     errors,
+    isBuildingPdf,
     addFiles,
     updateTransformations,
     removeImage,
     downloadImage,
+    downloadAllAsPdf,
     clearImages,
     clearErrors,
   } = useImageProcessor();
@@ -126,14 +129,26 @@ function App() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             {images.length > 0 && (
-              <button
-                onClick={downloadAll}
-                className="inline-flex items-center gap-2 bg-auburn text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold hover:bg-auburn/90 transition-all shadow-lg shadow-auburn/20 active:scale-95"
-              >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Lataa kaikki ({images.length})</span>
-                <span className="sm:hidden">{images.length}</span>
-              </button>
+              <>
+                <button
+                  onClick={downloadAllAsPdf}
+                  disabled={isBuildingPdf}
+                  className="inline-flex items-center gap-2 border border-charcoal/15 bg-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-semibold text-charcoal hover:border-auburn/40 hover:text-auburn transition-all disabled:opacity-60 disabled:cursor-wait"
+                  title="Yhdistä kaikki kuvat yhteen PDF-tiedostoon"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span className="hidden sm:inline">{isBuildingPdf ? 'Luodaan PDF…' : 'PDF:nä'}</span>
+                  <span className="sm:hidden">PDF</span>
+                </button>
+                <button
+                  onClick={downloadAll}
+                  className="inline-flex items-center gap-2 bg-auburn text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold hover:bg-auburn/90 transition-all shadow-lg shadow-auburn/20 active:scale-95"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Lataa kaikki ({images.length})</span>
+                  <span className="sm:hidden">{images.length}</span>
+                </button>
+              </>
             )}
           </div>
         </div>

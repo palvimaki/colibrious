@@ -12,6 +12,7 @@ A privacy-first, client-side image processing PWA. Every byte stays on your devi
 - **Crop** — free-form or 1:1, 4:3, 16:9, 3:2 aspect ratios
 - **Rotate · Flip** — horizontal and vertical
 - **Format conversion** — PNG, JPEG, WebP, with quality control
+- **PDF export** — combine all images into one multi-page PDF (client-side via `pdf-lib`, lazy-loaded)
 - **Filters** — brightness, grayscale, sepia
 - **Watermarks** — custom text overlay
 - **Batch processing** — apply settings to many images at once
@@ -30,7 +31,7 @@ The source is open under MIT — verify it yourself.
 
 ## Stack
 
-React 19 · TypeScript · Vite · Tailwind CSS v4 · Framer Motion · `vite-plugin-pwa`
+React 19 · TypeScript · Vite · Tailwind CSS v4 · Framer Motion · `vite-plugin-pwa` · `pdf-lib`
 
 ## Development
 
