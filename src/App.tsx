@@ -171,9 +171,16 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             className="min-h-[calc(100svh-220px)] flex flex-col items-center justify-center text-center space-y-6"
           >
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-7 max-w-3xl">
+            <div className="sm:hidden flex justify-center px-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 text-center">
+                <Lock className="h-3.5 w-3.5 shrink-0" />
+                Yksityinen — kuvat pysyvät laitteellasi. Toimii ilman verkkoa.
+              </span>
+            </div>
+
+            <div className="hidden sm:flex items-center justify-center gap-7 max-w-3xl">
               <Logo size={144} className="shrink-0" />
-              <div className="hidden sm:block space-y-3 text-center sm:text-left">
+              <div className="space-y-3 text-left">
                 <h1 className="text-3xl sm:text-4xl font-bold text-charcoal tracking-tight">
                   Kuvankäsittelyä <span className="text-auburn">selaimessa.</span>
                 </h1>
@@ -181,7 +188,7 @@ function App() {
                   Muunna kuvia, muuta kuvan kokoa, lisää vesileimoja — kaikki suoraan selaimessasi.
                   Ei kirjautumista, toimii ilman verkkoa.
                 </p>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1 text-xs text-charcoal/55">
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-charcoal/55">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
                     Ei evästeitä
