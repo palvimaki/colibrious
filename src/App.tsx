@@ -171,7 +171,7 @@ function App() {
           >
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-7 max-w-3xl">
               <Logo size={144} className="shrink-0" />
-              <div className="space-y-3 text-center sm:text-left">
+              <div className="hidden sm:block space-y-3 text-center sm:text-left">
                 <h1 className="text-3xl sm:text-4xl font-bold text-charcoal tracking-tight">
                   Kuvankäsittelyä <span className="text-auburn">selaimessa.</span>
                 </h1>

@@ -25,6 +25,14 @@ html, body {
   }
 }
 
+/* iOS Safari zooms when focusing an input whose computed font-size < 16px.
+   The zoom can't be undone in standalone PWA mode, so force 16px on mobile. */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 @theme {
   --color-auburn: var(--color-auburn);
   --color-cream: var(--color-cream);
