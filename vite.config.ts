@@ -16,7 +16,7 @@ export default defineConfig({
         name: 'kuvankäsittely.fi',
         short_name: 'kuvankäsittely',
         description:
-          'Muokkaa, muuta kokoa, pyöritä, muuta PDF:ksi, lisää vesileimoja — kaikki suoraan selaimessasi. Ei kirjautumista, toimii ilman verkkoa.',
+          'Muokkaa, muuta kokoa, pyöritä, muuta PDF:ksi, lisää vesileimoja. Kaikki suoraan selaimessasi. Ei kirjautumista, toimii ilman verkkoa.',
         lang: 'fi',
         start_url: '/',
         scope: '/',

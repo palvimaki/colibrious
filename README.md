@@ -1,6 +1,6 @@
 # kuvankäsittely.fi
 
-> Muokkaa, muuta kokoa, pyöritä, muuta PDF:ksi, lisää vesileimoja — kaikki suoraan selaimessasi. Ei kirjautumista, toimii ilman verkkoa.
+> Muokkaa, muuta kokoa, pyöritä, muuta PDF:ksi, lisää vesileimoja. Kaikki suoraan selaimessasi. Ei kirjautumista, toimii ilman verkkoa.
 
 A privacy-first, client-side image processing PWA. Every byte stays on your device — there is no upload, no account, no cookie, no analytics. Install it to your home screen and it works offline.
 
