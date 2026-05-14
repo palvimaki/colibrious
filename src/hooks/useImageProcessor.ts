@@ -3,6 +3,7 @@ import { DEFAULT_TRANSFORMATIONS } from '../types/image';
 import type { ProcessedImage, ImageTransformations } from '../types/image';
 import { decodeImage, runPipeline } from '../utils/pipeline';
 import { saveAs } from 'file-saver';
+import { useStrings } from '../i18n/useStrings';
 
 const ACCEPTED_TYPES: ReadonlyArray<ImageTransformations['format']> = [
   'image/png',
@@ -51,6 +52,7 @@ const toPipelineOps = (transformations: ImageTransformations) => ({
 });
 
 export const useImageProcessor = () => {
+  const t = useStrings();
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [errors, setErrors] = useState<FileError[]>([]);
   const [isBuildingPdf, setIsBuildingPdf] = useState(false);
@@ -72,14 +74,14 @@ export const useImageProcessor = () => {
         if (!ACCEPTED_TYPES.includes(file.type as ImageTransformations['format'])) {
           pushError({
             file: file.name,
-            reason: 'Tukematon tiedostomuoto. Hyväksytyt: PNG, JPEG, WebP.',
+            reason: t.unsupportedFileType,
           });
           continue;
         }
         if (file.size > MAX_FILE_BYTES) {
           pushError({
             file: file.name,
-            reason: `Tiedosto on liian suuri (${(file.size / 1024 / 1024).toFixed(1)} MB). Yläraja 50 MB.`,
+            reason: t.fileTooLarge((file.size / 1024 / 1024).toFixed(1)),
           });
           continue;
         }
@@ -101,7 +103,7 @@ export const useImageProcessor = () => {
           });
         } catch {
           URL.revokeObjectURL(previewUrl);
-          pushError({ file: file.name, reason: 'Kuvan dekoodaus epäonnistui.' });
+          pushError({ file: file.name, reason: t.decodeFailed });
         }
       }
 
@@ -109,7 +111,7 @@ export const useImageProcessor = () => {
         setImages((prev) => [...prev, ...accepted]);
       }
     },
-    [pushError]
+    [pushError, t]
   );
 
   const updateTransformations = useCallback(
@@ -157,11 +159,11 @@ export const useImageProcessor = () => {
         setImages((prev) => prev.map((i) => (i.id === id ? { ...i, isProcessing: false } : i)));
         pushError({
           file: img.originalFile.name,
-          reason: error instanceof Error ? error.message : 'Käsittely epäonnistui.',
+          reason: error instanceof Error ? error.message : t.processingFailed,
         });
       }
     },
-    [images, pushError]
+    [images, pushError, t]
   );
 
   const downloadImage = useCallback(
@@ -173,11 +175,11 @@ export const useImageProcessor = () => {
       if (blob) {
         const extension = img.currentTransformations.format.split('/')[1];
         const fileName =
-          img.originalFile.name.replace(/\.[^/.]+$/, '') + `-kuvankasittely.${extension}`;
+          img.originalFile.name.replace(/\.[^/.]+$/, '') + `-${t.downloadSuffix}.${extension}`;
         saveAs(blob, fileName);
       }
     },
-    [images, processImage]
+    [images, processImage, t]
   );
 
   const downloadAllAsPdf = useCallback(async () => {
@@ -227,7 +229,7 @@ export const useImageProcessor = () => {
         } catch (error) {
           pushError({
             file: img.originalFile.name,
-            reason: error instanceof Error ? error.message : 'PDF-sivun lisääminen epäonnistui.',
+            reason: error instanceof Error ? error.message : t.pdfPageFailed,
           });
         }
       }
@@ -235,16 +237,16 @@ export const useImageProcessor = () => {
       if (pdf.getPageCount() === 0) return;
       const pdfBytes = await pdf.save();
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
-      saveAs(blob, `kuvankasittely-${pdf.getPageCount()}-kuvaa.pdf`);
+      saveAs(blob, t.pdfFilename(pdf.getPageCount()));
     } catch (error) {
       pushError({
         file: 'PDF',
-        reason: error instanceof Error ? error.message : 'PDF:n luonti epäonnistui.',
+        reason: error instanceof Error ? error.message : t.pdfBuildFailed,
       });
     } finally {
       setIsBuildingPdf(false);
     }
-  }, [images, isBuildingPdf, pushError]);
+  }, [images, isBuildingPdf, pushError, t]);
 
   const clearImages = useCallback(() => {
     images.forEach((img) => {

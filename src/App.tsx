@@ -5,6 +5,7 @@ import { ImageCard } from './components/ImageCard';
 import { InstallHint } from './components/InstallHint';
 import { InstallBanner } from './components/InstallBanner';
 import { useImageProcessor } from './hooks/useImageProcessor';
+import { useStrings } from './i18n/useStrings';
 import {
   Settings2,
   Download,
@@ -29,9 +30,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 type ResizeUnit = 'px' | '%';
 
-const REPO_URL = 'https://github.com/palvimaki/kuvankasittely.fi';
+const REPO_URL = 'https://github.com/palvimaki/colibrious';
 
 function App() {
+  const t = useStrings();
   const {
     images,
     errors,
@@ -53,6 +55,13 @@ function App() {
   const [batchFitEdge, setBatchFitEdge] = useState('');
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const dragDepth = useRef(0);
+
+  useEffect(() => {
+    // Keep document.title in sync with detected locale even when the static
+    // index.html that nginx served belongs to the other locale (defensive).
+    document.title = t.ogTitle;
+    document.documentElement.lang = t._locale;
+  }, [t.ogTitle, t._locale]);
 
   useEffect(() => {
     const hasFiles = (event: DragEvent) =>
@@ -168,8 +177,8 @@ function App() {
         >
           <div className="rounded-3xl border-4 border-dashed border-auburn bg-white/85 px-10 py-12 text-center shadow-2xl">
             <Upload className="mx-auto h-16 w-16 text-auburn" />
-            <p className="mt-4 text-2xl font-bold text-auburn">Pudota kuvat mihin tahansa</p>
-            <p className="mt-1 text-sm text-charcoal/60">PNG, JPEG tai WebP</p>
+            <p className="mt-4 text-2xl font-bold text-auburn">{t.dropOverlay}</p>
+            <p className="mt-1 text-sm text-charcoal/60">{t.dropOverlayHelp}</p>
           </div>
         </div>
       )}
@@ -191,18 +200,18 @@ function App() {
                   onClick={downloadAllAsPdf}
                   disabled={isBuildingPdf}
                   className="inline-flex items-center gap-2 border border-charcoal/15 bg-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-sm font-semibold text-charcoal hover:border-auburn/40 hover:text-auburn transition-all disabled:opacity-60 disabled:cursor-wait"
-                  title="Yhdistä kaikki kuvat yhteen PDF-tiedostoon"
+                  title={t.combinePdfTitle}
                 >
                   <FileText className="w-4 h-4" />
-                  <span className="hidden sm:inline">{isBuildingPdf ? 'Luodaan PDF…' : 'PDF:nä'}</span>
-                  <span className="sm:hidden">PDF</span>
+                  <span className="hidden sm:inline">{isBuildingPdf ? t.buildingPdf : t.asPdf}</span>
+                  <span className="sm:hidden">{t.pdfShort}</span>
                 </button>
                 <button
                   onClick={downloadAll}
                   className="inline-flex items-center gap-2 bg-auburn text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold hover:bg-auburn/90 transition-all shadow-lg shadow-auburn/20 active:scale-95"
                 >
                   <Download className="w-4 h-4" />
-                  <span className="hidden sm:inline">Lataa kaikki ({images.length})</span>
+                  <span className="hidden sm:inline">{t.downloadAllShort(images.length)}</span>
                   <span className="sm:hidden">{images.length}</span>
                 </button>
               </>
@@ -229,9 +238,9 @@ function App() {
                 type="button"
                 onClick={clearErrors}
                 className="shrink-0 text-xs font-semibold text-red-700/70 hover:text-red-700"
-                aria-label="Sulje virheilmoitukset"
+                aria-label={t.closeErrorsAria}
               >
-                Sulje
+                {t.closeBtn}
               </button>
             </div>
           </div>
@@ -246,7 +255,7 @@ function App() {
             <div className="sm:hidden flex justify-center px-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 text-center">
                 <Lock className="h-3.5 w-3.5 shrink-0" />
-                Yksityinen — kuvat pysyvät laitteellasi. Toimii ilman verkkoa.
+                {t.privacyBadgeFull}
               </span>
             </div>
 
@@ -254,25 +263,25 @@ function App() {
               <Logo size={144} className="shrink-0" />
               <div className="space-y-3 text-left">
                 <h1 className="text-3xl sm:text-4xl font-bold text-charcoal tracking-tight">
-                  Kuvankäsittelyä <span className="text-auburn">selaimessa.</span>
+                  {t.heroLeft} <span className="text-auburn">{t.heroAccent}</span>
                 </h1>
                 <p className="text-charcoal/60 text-base sm:text-lg leading-relaxed max-w-lg">
-                  Muokkaa, muuta kokoa, pyöritä, muuta PDF:ksi, lisää vesileimoja.
+                  {t.heroDescriptionLine1}
                   <br />
-                  Kaikki suoraan selaimessasi. Ei kirjautumista, toimii ilman verkkoa.
+                  {t.heroDescriptionLine2}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-charcoal/55">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
-                    Ei evästeitä
+                    {t.chipNoCookies}
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
                     <Lock className="h-3.5 w-3.5 text-emerald-700" />
-                    Ei latauksia palvelimelle
+                    {t.chipNoUploads}
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
                     <GithubIcon className="h-3.5 w-3.5" />
-                    Avoin lähdekoodi (MIT)
+                    {t.chipOpenSource}
                   </span>
                 </div>
               </div>
@@ -290,8 +299,8 @@ function App() {
                     <Settings2 className="w-5 h-5 text-orange-accent" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-charcoal">Asetukset</h2>
-                    <p className="text-[10px] text-charcoal/40">Koskee kaikkia kuvia.</p>
+                    <h2 className="font-bold text-charcoal">{t.settingsTitle}</h2>
+                    <p className="text-[10px] text-charcoal/40">{t.appliesToAll}</p>
                   </div>
                 </div>
 
@@ -299,7 +308,7 @@ function App() {
                   {/* Format Selection */}
                   <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40 flex items-center gap-2">
-                      <Layers className="w-3 h-3" /> Tallennusmuoto
+                      <Layers className="w-3 h-3" /> {t.outputFormat}
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                       {['image/png', 'image/jpeg', 'image/webp'].map((f) => (
@@ -322,7 +331,7 @@ function App() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40">
-                        Aseta tarkat mitat
+                        {t.setExactDimensions}
                       </label>
                       <div className="flex rounded-full bg-charcoal/[0.04] p-1 text-[10px] font-bold">
                         {(['px', '%'] as ResizeUnit[]).map((unit) => (
@@ -343,7 +352,7 @@ function App() {
                       <input
                         type="number"
                         min="1"
-                        placeholder="L"
+                        placeholder={t._locale === 'fi' ? 'L' : 'W'}
                         value={batchWidth}
                         onChange={(event) => {
                           setBatchWidth(event.target.value);
@@ -351,22 +360,22 @@ function App() {
                           applyBatchResize(event.target.value, batchHeight, 'w');
                         }}
                         className="min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 text-xs outline-none focus:border-auburn"
-                        aria-label="Eräleveys"
+                        aria-label={t.batchWidthAria}
                       />
                       <button
                         type="button"
                         onClick={() => setBatchAspectLocked((value) => !value)}
                         className="rounded-xl border border-charcoal/10 bg-white p-2 text-charcoal/50"
-                        aria-label={batchAspectLocked ? 'Vapauta kuvasuhde' : 'Lukitse kuvasuhde'}
+                        aria-label={batchAspectLocked ? t.unlockAspect : t.lockAspect}
                         aria-pressed={batchAspectLocked}
-                        title={batchAspectLocked ? 'Vapauta kuvasuhde' : 'Lukitse kuvasuhde'}
+                        title={batchAspectLocked ? t.unlockAspect : t.lockAspect}
                       >
                         {batchAspectLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
                       </button>
                       <input
                         type="number"
                         min="1"
-                        placeholder="K"
+                        placeholder={t._locale === 'fi' ? 'K' : 'H'}
                         value={batchHeight}
                         onChange={(event) => {
                           setBatchHeight(event.target.value);
@@ -374,12 +383,12 @@ function App() {
                           applyBatchResize(batchWidth, event.target.value, 'h');
                         }}
                         className="min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 text-xs outline-none focus:border-auburn"
-                        aria-label="Eräkorkeus"
+                        aria-label={t.batchHeightAria}
                       />
                     </div>
                     <div className="space-y-2 border-t border-charcoal/5 pt-3">
                       <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40">
-                        Tai sovita pisin sivu
+                        {t.orFitLongestSide}
                       </label>
                       <div className="flex gap-2">
                         <div className="relative min-w-0 flex-1">
@@ -390,7 +399,7 @@ function App() {
                             value={batchFitEdge}
                             onChange={(event) => setBatchFitEdge(event.target.value)}
                             className="w-full min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 pr-8 text-xs outline-none focus:border-auburn"
-                            aria-label="Pisin sivu pikseleinä"
+                            aria-label={t.longestSideAria}
                           />
                           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-charcoal/40">
                             px
@@ -401,11 +410,11 @@ function App() {
                           onClick={applyBatchFitEdge}
                           className="rounded-xl bg-charcoal px-3 py-2 text-[10px] font-bold text-white"
                         >
-                          Käytä
+                          {t.applyBtn}
                         </button>
                       </div>
                       <p className="text-[10px] leading-snug text-charcoal/50">
-                        Skaalaa kunkin kuvan niin, että pisin sivu vastaa annettua arvoa. Kuvasuhde säilyy.
+                        {t.fitDescription}
                       </p>
                     </div>
                   </div>
@@ -413,7 +422,7 @@ function App() {
                   {/* Filter Quick Toggles */}
                   <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40 flex items-center gap-2">
-                      <Sparkles className="w-3 h-3" /> Suodattimet
+                      <Sparkles className="w-3 h-3" /> {t.filters}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -422,7 +431,7 @@ function App() {
                           globalSettings.grayscale ? 'bg-auburn text-white border-auburn' : 'bg-white text-charcoal/60 border-charcoal/10'
                         }`}
                       >
-                        Mustavalko
+                        {t.grayscale}
                       </button>
                       <button
                         onClick={() => applyGlobalSetting({ sepia: !globalSettings.sepia })}
@@ -430,7 +439,7 @@ function App() {
                           globalSettings.sepia ? 'bg-auburn text-white border-auburn' : 'bg-white text-charcoal/60 border-charcoal/10'
                         }`}
                       >
-                        Seepia
+                        {t.sepia}
                       </button>
                     </div>
                   </div>
@@ -439,12 +448,12 @@ function App() {
                   <div className="space-y-4">
                     {globalSettings.format === 'image/png' ? (
                       <div className="inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase text-emerald-700">
-                        Häviötön
+                        {t.lossless}
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <label className="text-xs font-bold text-charcoal/60 uppercase">Laatu</label>
+                          <label className="text-xs font-bold text-charcoal/60 uppercase">{t.quality}</label>
                           <span className="text-xs font-bold text-auburn">{Math.round(globalSettings.quality * 100)}%</span>
                         </div>
                         <input
@@ -454,14 +463,14 @@ function App() {
                           step="0.01"
                           value={globalSettings.quality}
                           onChange={(e) => applyGlobalSetting({ quality: parseFloat(e.target.value) })}
-                          aria-label="Pakkauslaatu"
+                          aria-label={t.qualityAria}
                           className="w-full accent-auburn"
                         />
                       </div>
                     )}
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <label className="text-xs font-bold text-charcoal/60 uppercase">Kirkkaus</label>
+                        <label className="text-xs font-bold text-charcoal/60 uppercase">{t.brightness}</label>
                         <span className="text-xs font-bold text-auburn">{globalSettings.brightness}%</span>
                       </div>
                       <input
@@ -470,7 +479,7 @@ function App() {
                         max="200"
                         value={globalSettings.brightness}
                         onChange={(e) => applyGlobalSetting({ brightness: parseInt(e.target.value) })}
-                        aria-label="Kirkkaus"
+                        aria-label={t.brightnessAria}
                         className="w-full accent-auburn"
                       />
                     </div>
@@ -479,14 +488,14 @@ function App() {
                   {/* Watermark */}
                   <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40 flex items-center gap-2">
-                      <Sparkles className="w-3 h-3" /> Vesileima
+                      <Sparkles className="w-3 h-3" /> {t.watermark}
                     </label>
                     <input
                       type="text"
-                      placeholder="Kirjoita vesileiman teksti…"
+                      placeholder={t.watermarkPlaceholder}
                       value={globalSettings.watermarkText || ''}
                       onChange={(e) => applyGlobalSetting({ watermarkText: e.target.value })}
-                      aria-label="Vesileiman teksti"
+                      aria-label={t.watermarkAria}
                       className="w-full px-4 py-2 rounded-xl border border-charcoal/10 text-sm focus:border-auburn outline-none transition-colors"
                     />
                   </div>
@@ -496,7 +505,7 @@ function App() {
                     className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-red-500/10 text-red-500 font-bold text-sm hover:bg-red-500 hover:text-white transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Tyhjennä
+                    {t.clear}
                   </button>
                 </div>
               </div>
@@ -544,10 +553,10 @@ function App() {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="flex items-center gap-1.5">
             <Lock className="h-3.5 w-3.5 text-emerald-700" />
-            Yksityinen — kuvat pysyvät laitteellasi. Ei evästeitä.
+            {t.footerPrivacy}
           </p>
           <div className="flex items-center gap-3">
-            <span>Avoin lähdekoodi:</span>
+            <span>{t.footerOpenSource}</span>
             <a
               href={REPO_URL}
               target="_blank"
@@ -558,7 +567,7 @@ function App() {
               GitHub
             </a>
             <span className="text-charcoal/30">·</span>
-            <span>MIT-lisenssi</span>
+            <span>{t.footerLicense}</span>
           </div>
         </div>
       </footer>

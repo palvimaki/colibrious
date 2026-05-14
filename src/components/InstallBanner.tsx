@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Smartphone, ChevronDown, X } from 'lucide-react';
+import { useStrings } from '../i18n/useStrings';
 
 const isMobile = () => {
   const ua = navigator.userAgent;
@@ -18,7 +19,8 @@ interface InstallBannerProps {
   targetId?: string;
 }
 
-export const InstallBanner = ({ targetId = 'asenna' }: InstallBannerProps) => {
+export const InstallBanner = ({ targetId = 'install' }: InstallBannerProps) => {
+  const t = useStrings();
   const [eligible, setEligible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -41,14 +43,14 @@ export const InstallBanner = ({ targetId = 'asenna' }: InstallBannerProps) => {
         className="flex flex-1 items-center justify-center gap-2 px-4 py-2.5 active:bg-auburn/90"
       >
         <Smartphone className="h-4 w-4" />
-        Asenna sovellus puhelimeesi
+        {t.installBannerText}
         <ChevronDown className="h-4 w-4 opacity-70" />
       </a>
       <button
         type="button"
         onClick={() => setDismissed(true)}
         className="px-3 text-white/85 hover:bg-white/15 active:bg-white/20"
-        aria-label="Sulje asennusbanneri"
+        aria-label={t.installBannerCloseAria}
       >
         <X className="h-4 w-4" />
       </button>

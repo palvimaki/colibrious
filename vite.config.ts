@@ -3,7 +3,18 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// https://vitejs.dev/config/
+/**
+ * The build emits a single dist/ that is served from two domains:
+ *   - colibrious.com         (English UI, default)
+ *   - kuvankäsittely.fi      (Finnish UI)
+ *
+ * The default manifest emitted here is English (Colibrious). The post-build
+ * script in scripts/post-build.mjs additionally writes:
+ *   - dist/manifest.fi.webmanifest  (Finnish translation)
+ *   - dist/index.fi.html            (Finnish meta tags)
+ *
+ * nginx on kuvankäsittely.fi is responsible for serving the .fi files.
+ */
 export default defineConfig({
   plugins: [
     react(),
@@ -13,11 +24,11 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
         id: '/',
-        name: 'kuvankäsittely.fi',
-        short_name: 'kuvankäsittely',
+        name: 'Colibrious',
+        short_name: 'Colibrious',
         description:
-          'Muokkaa, muuta kokoa, pyöritä, muuta PDF:ksi, lisää vesileimoja. Kaikki suoraan selaimessasi. Ei kirjautumista, toimii ilman verkkoa.',
-        lang: 'fi',
+          'Edit, resize, rotate, convert to PDF, add watermarks. All in your browser. No sign-up. Works offline.',
+        lang: 'en',
         start_url: '/',
         scope: '/',
         display: 'standalone',

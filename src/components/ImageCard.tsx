@@ -14,6 +14,7 @@ import {
 import type { ProcessedImage, ImageTransformations } from '../types/image';
 import type { CropRect, PipelineOps } from '../utils/pipeline';
 import { decodeImage, runPipeline } from '../utils/pipeline';
+import { useStrings } from '../i18n/useStrings';
 
 interface ImageCardProps {
   image: ProcessedImage;
@@ -25,13 +26,14 @@ interface ImageCardProps {
 type CropMode = 'free' | '1:1' | '4:3' | '16:9' | '3:2';
 type DragMode = 'move' | 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
-const ASPECTS: Array<{ label: string; mode: CropMode; ratio?: number }> = [
-  { label: 'Vapaa', mode: 'free' },
-  { label: '1:1', mode: '1:1', ratio: 1 },
-  { label: '4:3', mode: '4:3', ratio: 4 / 3 },
-  { label: '16:9', mode: '16:9', ratio: 16 / 9 },
-  { label: '3:2', mode: '3:2', ratio: 3 / 2 },
-];
+const ASPECT_RATIOS: Record<CropMode, number | undefined> = {
+  free: undefined,
+  '1:1': 1,
+  '4:3': 4 / 3,
+  '16:9': 16 / 9,
+  '3:2': 3 / 2,
+};
+const ASPECT_MODES: CropMode[] = ['free', '1:1', '4:3', '16:9', '3:2'];
 
 const formatBytes = (bytes: number) => {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -71,6 +73,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
   onDownload,
   onUpdateTransform,
 }) => {
+  const t = useStrings();
+  const aspectLabel = (mode: CropMode) => (mode === 'free' ? t.free : mode);
   const { currentTransformations } = image;
   const previewUrlRef = useRef<string | null>(null);
   const previewBoxRef = useRef<HTMLDivElement | null>(null);
@@ -179,7 +183,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
 
   const applyCropMode = (mode: CropMode) => {
     setCropMode(mode);
-    const ratio = ASPECTS.find((item) => item.mode === mode)?.ratio;
+    const ratio = ASPECT_RATIOS[mode];
     if (!ratio) return;
 
     setDraftCrop((current) => {
@@ -258,7 +262,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
   };
 
   const resizeDraftCrop = (mode: DragMode, dx: number, dy: number, start: CropRect) => {
-    const ratio = ASPECTS.find((item) => item.mode === cropMode)?.ratio;
+    const ratio = ASPECT_RATIOS[cropMode];
     let left = start.x;
     let right = start.x + start.w;
     let top = start.y;
@@ -372,7 +376,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                   <button
                     key={mode}
                     type="button"
-                    aria-label={`Rajauskahva ${mode}`}
+                    aria-label={t.cropHandleAria(mode)}
                     className={`absolute h-4 w-4 rounded-full border-2 border-white bg-auburn ${position}`}
                     onPointerDown={(event) => startDrag(mode, event)}
                     onPointerMove={(event) => updateDrag(event.clientX, event.clientY)}
@@ -386,16 +390,16 @@ export const ImageCard: React.FC<ImageCardProps> = ({
 
             <div className="absolute left-3 right-3 top-3 rounded-2xl bg-white/95 p-2 shadow-sm">
               <div className="grid grid-cols-5 gap-1">
-                {ASPECTS.map((aspect) => (
+                {ASPECT_MODES.map((mode) => (
                   <button
-                    key={aspect.mode}
+                    key={mode}
                     type="button"
-                    onClick={() => applyCropMode(aspect.mode)}
+                    onClick={() => applyCropMode(mode)}
                     className={`rounded-xl px-2 py-1 text-[10px] font-bold ${
-                      cropMode === aspect.mode ? 'bg-auburn text-white' : 'bg-charcoal/5 text-charcoal/60'
+                      cropMode === mode ? 'bg-auburn text-white' : 'bg-charcoal/5 text-charcoal/60'
                     }`}
                   >
-                    {aspect.label}
+                    {aspectLabel(mode)}
                   </button>
                 ))}
               </div>
@@ -411,7 +415,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                 className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-auburn px-3 py-2 text-xs font-bold text-white"
               >
                 <Check className="h-4 w-4" />
-                Käytä
+                {t.cropApply}
               </button>
               <button
                 type="button"
@@ -419,7 +423,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                 className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 text-xs font-bold text-charcoal"
               >
                 <X className="h-4 w-4" />
-                Peruuta
+                {t.cropCancel}
               </button>
             </div>
           </div>
@@ -431,8 +435,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
               type="button"
               onClick={() => onDownload(image.id)}
               className="p-3 bg-white text-auburn rounded-full hover:scale-110 transition-transform"
-              aria-label="Lataa kuva"
-              title="Lataa"
+              aria-label={t.downloadImageAria}
+              title={t.downloadImageTitle}
             >
               <Download className="w-5 h-5" />
             </button>
@@ -440,8 +444,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
               type="button"
               onClick={() => onRemove(image.id)}
               className="p-3 bg-white text-red-500 rounded-full hover:scale-110 transition-transform"
-              aria-label="Poista kuva"
-              title="Poista"
+              aria-label={t.removeImageAria}
+              title={t.removeImageTitle}
             >
               <Trash2 className="w-5 h-5" />
             </button>
@@ -466,8 +470,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={() => setAdjustOpen((value) => !value)}
             className="text-charcoal/20 hover:text-auburn transition-colors"
-            aria-label="Säädöt"
-            title="Säädöt"
+            aria-label={t.adjustAria}
+            title={t.adjustAria}
           >
             <MoreHorizontal className="w-5 h-5" />
           </button>
@@ -482,8 +486,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
               })
             }
             className="p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            aria-label="Kierrä 90 astetta"
-            title="Kierrä 90°"
+            aria-label={t.rotateAria}
+            title={t.rotateTitle}
           >
             <RotateCw className="w-4 h-4" />
           </button>
@@ -491,8 +495,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={() => onUpdateTransform(image.id, { flipHorizontal: !currentTransformations.flipHorizontal })}
             className="p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            aria-label="Käännä vaakatasossa"
-            title="Käännä vaakatasossa"
+            aria-label={t.flipHorizontalLabel}
+            title={t.flipHorizontalLabel}
           >
             <FlipHorizontal className="w-4 h-4" />
           </button>
@@ -500,8 +504,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={() => onUpdateTransform(image.id, { flipVertical: !currentTransformations.flipVertical })}
             className="p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            aria-label="Käännä pystysuunnassa"
-            title="Käännä pystysuunnassa"
+            aria-label={t.flipVerticalLabel}
+            title={t.flipVerticalLabel}
           >
             <FlipVertical className="w-4 h-4" />
           </button>
@@ -509,8 +513,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={openCrop}
             className="p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            aria-label="Rajaa"
-            title="Rajaa"
+            aria-label={t.cropLabel}
+            title={t.cropLabel}
           >
             <Crop className="w-4 h-4" />
           </button>
@@ -518,8 +522,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={() => setAdjustOpen((value) => !value)}
             className="ml-auto p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            aria-label="Säädöt"
-            title="Säädöt"
+            aria-label={t.adjustAria}
+            title={t.adjustAria}
           >
             <SlidersHorizontal className="w-4 h-4" />
           </button>
@@ -528,7 +532,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         {adjustOpen && (
           <div className="space-y-4 rounded-2xl border border-charcoal/5 bg-charcoal/[0.02] p-3">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-charcoal/45">Muoto</label>
+              <label className="text-[10px] font-bold uppercase text-charcoal/45">{t.format}</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['image/png', 'image/jpeg', 'image/webp'] as ImageTransformations['format'][]).map((format) => (
                   <button
@@ -549,12 +553,12 @@ export const ImageCard: React.FC<ImageCardProps> = ({
 
             {currentTransformations.format === 'image/png' ? (
               <span className="inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase text-emerald-700">
-                Häviötön
+                {t.lossless}
               </span>
             ) : (
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <label className="text-[10px] font-bold uppercase text-charcoal/45">Laatu</label>
+                  <label className="text-[10px] font-bold uppercase text-charcoal/45">{t.qualityShort}</label>
                   <span className="text-[10px] font-bold text-auburn">
                     {Math.round(currentTransformations.quality * 100)}%
                   </span>
@@ -566,7 +570,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                   step="0.01"
                   value={currentTransformations.quality}
                   onChange={(event) => onUpdateTransform(image.id, { quality: Number(event.target.value) })}
-                  aria-label="Pakkauslaatu"
+                  aria-label={t.compressionQualityAria}
                   className="w-full accent-auburn"
                 />
               </div>

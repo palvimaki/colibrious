@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Smartphone, Apple, Check } from 'lucide-react';
+import { useStrings } from '../i18n/useStrings';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -11,7 +12,27 @@ const isStandalone = () =>
   // @ts-expect-error iOS Safari adds this on navigator
   window.navigator.standalone === true;
 
+const IphoneCopy = ({ locale, brand }: { locale: 'fi' | 'en'; brand: string }) => {
+  if (locale === 'fi') {
+    return (
+      <p className="text-sm leading-relaxed text-charcoal/65">
+        Avaa {brand} Safarissa. Paina <strong>Jaa</strong>, sitten{' '}
+        <strong>Lisää koti-valikkoon</strong>. Varmista että{' '}
+        <strong>Avaa verkkosovelluksena</strong> on päällä, ja paina <strong>Lisää</strong>.
+      </p>
+    );
+  }
+  return (
+    <p className="text-sm leading-relaxed text-charcoal/65">
+      Open {brand} in Safari. Tap <strong>Share</strong>, then{' '}
+      <strong>Add to Home Screen</strong>. Make sure{' '}
+      <strong>Open as Web App</strong> is on, then tap <strong>Add</strong>.
+    </p>
+  );
+};
+
 export const InstallHint = () => {
+  const t = useStrings();
   const [installed, setInstalled] = useState(true);
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installing, setInstalling] = useState(false);
@@ -50,34 +71,29 @@ export const InstallHint = () => {
 
   return (
     <section
-      id="asenna"
+      id="install"
       className="w-full max-w-xl mx-auto pt-4 text-left scroll-mt-24"
     >
       <h2 className="text-[11px] font-bold uppercase tracking-[0.15em] text-charcoal/40 mb-3 text-center">
-        Asenna sovellus
+        {t.installSection}
       </h2>
 
       <div className="grid gap-2.5">
         <article className="rounded-2xl border border-charcoal/10 bg-white/70 px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-bold text-charcoal mb-1">
             <Apple className="h-4 w-4 text-auburn" />
-            iPhone · Safari
+            {t.iphoneSafariTitle}
           </div>
-          <p className="text-sm leading-relaxed text-charcoal/65">
-            Avaa kuvankäsittely.fi Safarissa. Paina <strong>Jaa</strong>, sitten{' '}
-            <strong>Lisää koti-valikkoon</strong>. Varmista että{' '}
-            <strong>Avaa verkkosovelluksena</strong> on päällä, ja paina <strong>Lisää</strong>.
-          </p>
+          <IphoneCopy locale={t._locale} brand={t.brandFull} />
         </article>
 
         <article className="rounded-2xl border border-charcoal/10 bg-white/70 px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-bold text-charcoal mb-1">
             <Smartphone className="h-4 w-4 text-auburn" />
-            Android · Chrome / Edge
+            {t.androidChromeTitle}
           </div>
           <p className="text-sm leading-relaxed text-charcoal/65 mb-3">
-            Avaa sivu Chromessa tai Edgessä Androidilla. Kun selain on valmis, paina alla olevaa
-            painiketta natiiviasennusta varten.
+            {t.androidChromeCopy}
           </p>
           <button
             type="button"
@@ -92,10 +108,10 @@ export const InstallHint = () => {
             {installing ? (
               <span className="inline-flex items-center justify-center gap-2">
                 <Check className="h-3.5 w-3.5" />
-                Asennetaan…
+                {t.installing}
               </span>
             ) : (
-              'Asenna kuvankäsittely.fi'
+              t.installAppBtn
             )}
           </button>
         </article>

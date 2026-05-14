@@ -1,13 +1,16 @@
+import { useStrings } from '../i18n/useStrings';
+
 interface LogoProps {
   size?: number;
   className?: string;
 }
 
 export const Logo = ({ size = 144, className = "" }: LogoProps) => {
+  const t = useStrings();
   return (
     <img
       src="/pwa-512x512.png"
-      alt="kuvankäsittely.fi"
+      alt={t.brandFull}
       width={size}
       height={size}
       style={{ width: size, height: size }}
@@ -16,8 +19,12 @@ export const Logo = ({ size = 144, className = "" }: LogoProps) => {
   );
 };
 
-export const Wordmark = ({ className = "" }: { className?: string }) => (
-  <span className={`font-bold tracking-tight text-auburn leading-none ${className}`}>
-    kuvankäsittely<span className="text-charcoal/40">.fi</span>
-  </span>
-);
+export const Wordmark = ({ className = "" }: { className?: string }) => {
+  const t = useStrings();
+  return (
+    <span className={`font-bold tracking-tight text-auburn leading-none ${className}`}>
+      {t.brandName}
+      <span className="text-charcoal/40">{t.brandTld}</span>
+    </span>
+  );
+};
