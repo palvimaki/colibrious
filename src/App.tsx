@@ -2,13 +2,31 @@ import { useState } from 'react';
 import { Logo } from './components/Logo';
 import { Dropzone } from './components/Dropzone';
 import { ImageCard } from './components/ImageCard';
+import { InstallHint } from './components/InstallHint';
 import { useImageProcessor } from './hooks/useImageProcessor';
-import { Settings2, Download, Trash2, Layers, Sparkles, Lock, Unlock } from 'lucide-react';
+import {
+  Settings2,
+  Download,
+  Trash2,
+  Layers,
+  Sparkles,
+  Lock,
+  Unlock,
+  ShieldCheck,
+} from 'lucide-react';
+
+const GithubIcon = ({ className = '' }: { className?: string }) => (
+  <svg viewBox="0 0 16 16" className={className} fill="currentColor" aria-hidden="true">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+  </svg>
+);
 import { DEFAULT_TRANSFORMATIONS } from './types/image';
 import type { ImageTransformations, ProcessedImage } from './types/image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type ResizeUnit = 'px' | '%';
+
+const REPO_URL = 'https://github.com/palvimaki/kuvankasittely.fi';
 
 function App() {
   const {
@@ -17,7 +35,7 @@ function App() {
     updateTransformations,
     removeImage,
     downloadImage,
-    clearImages
+    clearImages,
   } = useImageProcessor();
 
   const [globalSettings, setGlobalSettings] = useState<ImageTransformations>(DEFAULT_TRANSFORMATIONS);
@@ -91,42 +109,64 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-svh flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/5 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header
+        className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/5 px-4 sm:px-6 py-3"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <Logo />
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             {images.length > 0 && (
               <button
                 onClick={downloadAll}
-                className="flex items-center gap-2 bg-auburn text-white px-6 py-2.5 rounded-full font-semibold hover:bg-auburn/90 transition-all shadow-lg shadow-auburn/20 active:scale-95"
+                className="inline-flex items-center gap-2 bg-auburn text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold hover:bg-auburn/90 transition-all shadow-lg shadow-auburn/20 active:scale-95"
               >
                 <Download className="w-4 h-4" />
-                Download All ({images.length})
+                <span className="hidden sm:inline">Lataa kaikki ({images.length})</span>
+                <span className="sm:hidden">{images.length}</span>
               </button>
             )}
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 space-y-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-8">
         {images.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center space-y-6"
+            className="min-h-[calc(100svh-220px)] flex flex-col items-center justify-center text-center space-y-6"
           >
-            <div className="max-w-md space-y-2">
-              <h1 className="text-4xl font-bold text-charcoal tracking-tight">
-                Make your images <span className="text-auburn">magic.</span>
+            <div className="max-w-xl space-y-3">
+              <h1 className="text-3xl sm:text-4xl font-bold text-charcoal tracking-tight">
+                Kuvankäsittelyä <span className="text-auburn">selaimessa.</span>
               </h1>
-              <p className="text-charcoal/60">
-                A simple, powerful, and private way to batch process your images entirely in your browser.
+              <p className="text-charcoal/60 text-base sm:text-lg leading-relaxed">
+                Muunna kuvia, muuta kuvan kokoa, lisää vesileimoja — kaikki suoraan selaimessasi.
+                Ei kirjautumista, toimii ilman verkkoa.
               </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs text-charcoal/55">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+                  Ei evästeitä
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
+                  <Lock className="h-3.5 w-3.5 text-emerald-700" />
+                  Ei latauksia palvelimelle
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
+                  <GithubIcon className="h-3.5 w-3.5" />
+                  Avoin lähdekoodi (MIT)
+                </span>
+              </div>
             </div>
             <Dropzone onFilesSelected={addFiles} className="max-w-2xl" />
+            <div className="pt-2">
+              <InstallHint />
+            </div>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -138,8 +178,8 @@ function App() {
                     <Settings2 className="w-5 h-5 text-orange-accent" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-charcoal">Batch Settings</h2>
-                    <p className="text-[10px] text-charcoal/40">Applies to all images. Crop is per-image.</p>
+                    <h2 className="font-bold text-charcoal">Eräasetukset</h2>
+                    <p className="text-[10px] text-charcoal/40">Koskee kaikkia kuvia. Rajaus on kuvakohtainen.</p>
                   </div>
                 </div>
 
@@ -147,7 +187,7 @@ function App() {
                   {/* Format Selection */}
                   <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40 flex items-center gap-2">
-                      <Layers className="w-3 h-3" /> Output Format
+                      <Layers className="w-3 h-3" /> Tallennusmuoto
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                       {['image/png', 'image/jpeg', 'image/webp'].map((f) => (
@@ -170,7 +210,7 @@ function App() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40">
-                        Set exact dimensions
+                        Aseta tarkat mitat
                       </label>
                       <div className="flex rounded-full bg-charcoal/[0.04] p-1 text-[10px] font-bold">
                         {(['px', '%'] as ResizeUnit[]).map((unit) => (
@@ -191,7 +231,7 @@ function App() {
                       <input
                         type="number"
                         min="1"
-                        placeholder="W"
+                        placeholder="L"
                         value={batchWidth}
                         onChange={(event) => {
                           setBatchWidth(event.target.value);
@@ -199,20 +239,20 @@ function App() {
                           applyBatchResize(event.target.value, batchHeight, 'w');
                         }}
                         className="min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 text-xs outline-none focus:border-auburn"
-                        aria-label="Batch width"
+                        aria-label="Eräleveys"
                       />
                       <button
                         type="button"
                         onClick={() => setBatchAspectLocked((value) => !value)}
                         className="rounded-xl border border-charcoal/10 bg-white p-2 text-charcoal/50"
-                        title={batchAspectLocked ? 'Unlock aspect ratio' : 'Lock aspect ratio'}
+                        title={batchAspectLocked ? 'Vapauta kuvasuhde' : 'Lukitse kuvasuhde'}
                       >
                         {batchAspectLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
                       </button>
                       <input
                         type="number"
                         min="1"
-                        placeholder="H"
+                        placeholder="K"
                         value={batchHeight}
                         onChange={(event) => {
                           setBatchHeight(event.target.value);
@@ -220,12 +260,12 @@ function App() {
                           applyBatchResize(batchWidth, event.target.value, 'h');
                         }}
                         className="min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 text-xs outline-none focus:border-auburn"
-                        aria-label="Batch height"
+                        aria-label="Eräkorkeus"
                       />
                     </div>
                     <div className="space-y-2 border-t border-charcoal/5 pt-3">
                       <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40">
-                        Or fit by longest side
+                        Tai sovita pisin sivu
                       </label>
                       <div className="flex gap-2">
                         <div className="relative min-w-0 flex-1">
@@ -236,7 +276,7 @@ function App() {
                             value={batchFitEdge}
                             onChange={(event) => setBatchFitEdge(event.target.value)}
                             className="w-full min-w-0 rounded-xl border border-charcoal/10 px-3 py-2 pr-8 text-xs outline-none focus:border-auburn"
-                            aria-label="Batch longest side in pixels"
+                            aria-label="Pisin sivu pikseleinä"
                           />
                           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-charcoal/40">
                             px
@@ -247,11 +287,11 @@ function App() {
                           onClick={applyBatchFitEdge}
                           className="rounded-xl bg-charcoal px-3 py-2 text-[10px] font-bold text-white"
                         >
-                          Apply
+                          Käytä
                         </button>
                       </div>
                       <p className="text-[10px] leading-snug text-charcoal/50">
-                        Scales each image so its longer side equals this. Aspect ratio preserved.
+                        Skaalaa kunkin kuvan niin, että pisin sivu vastaa annettua arvoa. Kuvasuhde säilyy.
                       </p>
                     </div>
                   </div>
@@ -259,7 +299,7 @@ function App() {
                   {/* Filter Quick Toggles */}
                   <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40 flex items-center gap-2">
-                      <Sparkles className="w-3 h-3" /> Filters
+                      <Sparkles className="w-3 h-3" /> Suodattimet
                     </label>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -268,7 +308,7 @@ function App() {
                           globalSettings.grayscale ? 'bg-auburn text-white border-auburn' : 'bg-white text-charcoal/60 border-charcoal/10'
                         }`}
                       >
-                        Grayscale
+                        Mustavalko
                       </button>
                       <button
                         onClick={() => applyGlobalSetting({ sepia: !globalSettings.sepia })}
@@ -276,7 +316,7 @@ function App() {
                           globalSettings.sepia ? 'bg-auburn text-white border-auburn' : 'bg-white text-charcoal/60 border-charcoal/10'
                         }`}
                       >
-                        Sepia
+                        Seepia
                       </button>
                     </div>
                   </div>
@@ -285,12 +325,12 @@ function App() {
                   <div className="space-y-4">
                     {globalSettings.format === 'image/png' ? (
                       <div className="inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase text-emerald-700">
-                        Lossless
+                        Häviötön
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <label className="text-xs font-bold text-charcoal/60 uppercase">Quality</label>
+                          <label className="text-xs font-bold text-charcoal/60 uppercase">Laatu</label>
                           <span className="text-xs font-bold text-auburn">{Math.round(globalSettings.quality * 100)}%</span>
                         </div>
                         <input
@@ -306,7 +346,7 @@ function App() {
                     )}
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <label className="text-xs font-bold text-charcoal/60 uppercase">Brightness</label>
+                        <label className="text-xs font-bold text-charcoal/60 uppercase">Kirkkaus</label>
                         <span className="text-xs font-bold text-auburn">{globalSettings.brightness}%</span>
                       </div>
                       <input
@@ -323,11 +363,11 @@ function App() {
                   {/* Watermark */}
                   <div className="space-y-3">
                     <label className="text-xs font-bold uppercase tracking-wider text-charcoal/40 flex items-center gap-2">
-                      <Sparkles className="w-3 h-3" /> Watermark
+                      <Sparkles className="w-3 h-3" /> Vesileima
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter watermark text..."
+                      placeholder="Kirjoita vesileiman teksti…"
                       value={globalSettings.watermarkText || ''}
                       onChange={(e) => applyGlobalSetting({ watermarkText: e.target.value })}
                       className="w-full px-4 py-2 rounded-xl border border-charcoal/10 text-sm focus:border-auburn outline-none transition-colors"
@@ -339,7 +379,7 @@ function App() {
                     className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-red-500/10 text-red-500 font-bold text-sm hover:bg-red-500 hover:text-white transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Clear All
+                    Tyhjennä
                   </button>
                 </div>
               </div>
@@ -380,8 +420,31 @@ function App() {
         )}
       </main>
 
-      <footer className="py-8 text-center text-charcoal/30 text-xs">
-        <p>© 2026 PixelPaws • Your images never leave your computer • Crafted with magic</p>
+      <footer
+        className="border-t border-charcoal/5 bg-white/40 px-4 sm:px-6 py-6 text-charcoal/50 text-xs"
+        style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+      >
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="flex items-center gap-1.5">
+            <Lock className="h-3.5 w-3.5 text-emerald-700" />
+            Yksityinen — kuvat pysyvät laitteellasi. Ei evästeitä.
+          </p>
+          <div className="flex items-center gap-3">
+            <span>Avoin lähdekoodi:</span>
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-charcoal/10 bg-white px-3 py-1 font-semibold text-charcoal/70 hover:border-auburn/40 hover:text-auburn transition-colors"
+            >
+              <GithubIcon className="h-3.5 w-3.5" />
+              GitHub
+            </a>
+            <span className="text-charcoal/30">·</span>
+            <span>MIT-lisenssi</span>
+            <InstallHint />
+          </div>
+        </div>
       </footer>
     </div>
   );

@@ -7,10 +7,22 @@
   --color-orange-accent: #FF8C00;
 }
 
-body {
+html, body {
   background-color: #fcf9f2; /* Soft cream background */
   color: var(--color-charcoal);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overscroll-behavior: none;
+}
+
+@media (display-mode: standalone) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 @theme {

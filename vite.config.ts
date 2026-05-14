@@ -10,14 +10,30 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
-        name: 'PixelPaws',
-        short_name: 'PixelPaws',
-        description: 'Smarter Image Magic - Client-side Image Processing',
+        name: 'kuvankäsittely.fi',
+        short_name: 'kuvankäsittely',
+        description:
+          'Muunna kuvia, muuta kuvan kokoa, lisää vesileimoja — kaikki suoraan selaimessasi. Ei kirjautumista, toimii ilman verkkoa.',
+        lang: 'fi',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
         theme_color: '#A52A2A',
-        icons: []
-      }
-    })
+        background_color: '#fcf9f2',
+        icons: [
+          { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: 'maskable-icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+    }),
   ],
 });
