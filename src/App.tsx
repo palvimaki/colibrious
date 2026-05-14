@@ -210,8 +210,8 @@ function App() {
                     <Settings2 className="w-5 h-5 text-orange-accent" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-charcoal">Eräasetukset</h2>
-                    <p className="text-[10px] text-charcoal/40">Koskee kaikkia kuvia. Rajaus on kuvakohtainen.</p>
+                    <h2 className="font-bold text-charcoal">Asetukset</h2>
+                    <p className="text-[10px] text-charcoal/40">Koskee kaikkia kuvia.</p>
                   </div>
                 </div>
 
