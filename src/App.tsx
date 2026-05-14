@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Logo } from './components/Logo';
+import { Logo, Wordmark } from './components/Logo';
 import { Dropzone } from './components/Dropzone';
 import { ImageCard } from './components/ImageCard';
 import { InstallHint } from './components/InstallHint';
@@ -116,7 +116,9 @@ function App() {
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <Logo />
+          <a href="/" className="flex items-center text-lg">
+            <Wordmark />
+          </a>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {images.length > 0 && (
@@ -140,33 +142,34 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             className="min-h-[calc(100svh-220px)] flex flex-col items-center justify-center text-center space-y-6"
           >
-            <div className="max-w-xl space-y-3">
-              <h1 className="text-3xl sm:text-4xl font-bold text-charcoal tracking-tight">
-                Kuvankäsittelyä <span className="text-auburn">selaimessa.</span>
-              </h1>
-              <p className="text-charcoal/60 text-base sm:text-lg leading-relaxed">
-                Muunna kuvia, muuta kuvan kokoa, lisää vesileimoja — kaikki suoraan selaimessasi.
-                Ei kirjautumista, toimii ilman verkkoa.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs text-charcoal/55">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
-                  Ei evästeitä
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
-                  <Lock className="h-3.5 w-3.5 text-emerald-700" />
-                  Ei latauksia palvelimelle
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
-                  <GithubIcon className="h-3.5 w-3.5" />
-                  Avoin lähdekoodi (MIT)
-                </span>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-7 max-w-3xl">
+              <Logo size={144} className="shrink-0" />
+              <div className="space-y-3 text-center sm:text-left">
+                <h1 className="text-3xl sm:text-4xl font-bold text-charcoal tracking-tight">
+                  Kuvankäsittelyä <span className="text-auburn">selaimessa.</span>
+                </h1>
+                <p className="text-charcoal/60 text-base sm:text-lg leading-relaxed max-w-lg">
+                  Muunna kuvia, muuta kuvan kokoa, lisää vesileimoja — kaikki suoraan selaimessasi.
+                  Ei kirjautumista, toimii ilman verkkoa.
+                </p>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1 text-xs text-charcoal/55">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+                    Ei evästeitä
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
+                    <Lock className="h-3.5 w-3.5 text-emerald-700" />
+                    Ei latauksia palvelimelle
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal/[0.04] px-3 py-1">
+                    <GithubIcon className="h-3.5 w-3.5" />
+                    Avoin lähdekoodi (MIT)
+                  </span>
+                </div>
               </div>
             </div>
             <Dropzone onFilesSelected={addFiles} className="max-w-2xl" />
-            <div className="pt-2">
-              <InstallHint />
-            </div>
+            <InstallHint />
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -442,7 +445,6 @@ function App() {
             </a>
             <span className="text-charcoal/30">·</span>
             <span>MIT-lisenssi</span>
-            <InstallHint />
           </div>
         </div>
       </footer>

@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Smartphone, Share, Plus, MoreVertical, X } from 'lucide-react';
+import { Smartphone, Apple, Check } from 'lucide-react';
 
-type Platform = 'ios' | 'android' | 'desktop';
-
-const detectPlatform = (): Platform => {
-  const ua = navigator.userAgent;
-  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
-  if (/Android/i.test(ua)) return 'android';
-  return 'desktop';
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 };
 
 const isStandalone = () =>
@@ -15,140 +11,92 @@ const isStandalone = () =>
   // @ts-expect-error iOS Safari adds this on navigator
   window.navigator.standalone === true;
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-};
-
 export const InstallHint = () => {
-  const [open, setOpen] = useState(false);
-  const [platform, setPlatform] = useState<Platform>('desktop');
   const [installed, setInstalled] = useState(true);
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
-    setPlatform(detectPlatform());
     setInstalled(isStandalone());
 
     const onPrompt = (event: Event) => {
       event.preventDefault();
       setDeferred(event as BeforeInstallPromptEvent);
     };
+    const onInstalled = () => setInstalled(true);
+
     window.addEventListener('beforeinstallprompt', onPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
   }, []);
 
   if (installed) return null;
 
   const triggerNativePrompt = async () => {
     if (!deferred) return;
-    await deferred.prompt();
-    const { outcome } = await deferred.userChoice;
-    if (outcome === 'accepted') setInstalled(true);
-    setDeferred(null);
+    setInstalling(true);
+    try {
+      await deferred.prompt();
+      const { outcome } = await deferred.userChoice;
+      if (outcome === 'accepted') setInstalled(true);
+      setDeferred(null);
+    } finally {
+      setInstalling(false);
+    }
   };
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => (deferred ? triggerNativePrompt() : setOpen(true))}
-        className="inline-flex items-center gap-2 rounded-full border border-charcoal/10 bg-white/70 px-3 py-1.5 text-xs font-semibold text-charcoal/70 hover:border-auburn/30 hover:text-auburn transition-colors"
-      >
-        <Smartphone className="h-3.5 w-3.5" />
+    <section className="w-full max-w-xl mx-auto pt-4 text-left">
+      <h2 className="text-[11px] font-bold uppercase tracking-[0.15em] text-charcoal/40 mb-3 text-center">
         Asenna sovellus
-      </button>
+      </h2>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-charcoal/40 backdrop-blur-sm p-4"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="absolute right-4 top-4 text-charcoal/40 hover:text-charcoal"
-              aria-label="Sulje"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <h3 className="text-lg font-bold text-charcoal">Asenna kuvankäsittely.fi</h3>
-            <p className="mt-1 text-sm text-charcoal/60">
-              Lisää aloitusnäytölle ja käytä kuten sovellusta — myös ilman verkkoa.
-            </p>
-
-            {platform === 'ios' && (
-              <ol className="mt-4 space-y-3 text-sm text-charcoal/80">
-                <li className="flex items-start gap-2">
-                  <span className="font-bold text-auburn">1.</span>
-                  <span>
-                    Avaa Safarissa ja paina Jaa-painiketta{' '}
-                    <Share className="inline h-4 w-4 align-text-bottom text-auburn" />
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold text-auburn">2.</span>
-                  <span>
-                    Valitse <strong>Lisää Koti-valikkoon</strong>{' '}
-                    <Plus className="inline h-4 w-4 align-text-bottom text-auburn" />
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold text-auburn">3.</span>
-                  <span>
-                    Vahvista painamalla <strong>Lisää</strong>.
-                  </span>
-                </li>
-              </ol>
-            )}
-
-            {platform === 'android' && (
-              <ol className="mt-4 space-y-3 text-sm text-charcoal/80">
-                <li className="flex items-start gap-2">
-                  <span className="font-bold text-auburn">1.</span>
-                  <span>
-                    Avaa Chromessa ja paina valikkoa{' '}
-                    <MoreVertical className="inline h-4 w-4 align-text-bottom text-auburn" />
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold text-auburn">2.</span>
-                  <span>
-                    Valitse <strong>Asenna sovellus</strong> tai{' '}
-                    <strong>Lisää aloitusnäyttöön</strong>.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold text-auburn">3.</span>
-                  <span>Vahvista asennus.</span>
-                </li>
-              </ol>
-            )}
-
-            {platform === 'desktop' && (
-              <ol className="mt-4 space-y-3 text-sm text-charcoal/80">
-                <li className="flex items-start gap-2">
-                  <span className="font-bold text-auburn">1.</span>
-                  <span>
-                    Chrome / Edge: paina osoitepalkin oikealla olevaa{' '}
-                    <strong>asenna-kuvaketta</strong>.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold text-auburn">2.</span>
-                  <span>
-                    Safari (macOS 14+): valikko <strong>Tiedosto → Lisää Dockiin</strong>.
-                  </span>
-                </li>
-              </ol>
-            )}
+      <div className="grid gap-2.5">
+        <article className="rounded-2xl border border-charcoal/10 bg-white/70 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-charcoal mb-1">
+            <Apple className="h-4 w-4 text-auburn" />
+            iPhone · Safari
           </div>
-        </div>
-      )}
-    </>
+          <p className="text-sm leading-relaxed text-charcoal/65">
+            Avaa kuvankäsittely.fi Safarissa. Paina <strong>Jaa</strong>, sitten{' '}
+            <strong>Lisää koti-valikkoon</strong>. Varmista että{' '}
+            <strong>Avaa verkkosovelluksena</strong> on päällä, ja paina <strong>Lisää</strong>.
+          </p>
+        </article>
+
+        <article className="rounded-2xl border border-charcoal/10 bg-white/70 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-charcoal mb-1">
+            <Smartphone className="h-4 w-4 text-auburn" />
+            Android · Chrome / Edge
+          </div>
+          <p className="text-sm leading-relaxed text-charcoal/65 mb-3">
+            Avaa sivu Chromessa tai Edgessä Androidilla. Kun selain on valmis, paina alla olevaa
+            painiketta natiiviasennusta varten.
+          </p>
+          <button
+            type="button"
+            onClick={triggerNativePrompt}
+            disabled={!deferred || installing}
+            className={`w-full rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-all ${
+              deferred && !installing
+                ? 'bg-auburn text-white hover:bg-auburn/90 active:scale-[0.99]'
+                : 'cursor-not-allowed border border-charcoal/10 bg-charcoal/[0.04] text-charcoal/40'
+            }`}
+          >
+            {installing ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Check className="h-3.5 w-3.5" />
+                Asennetaan…
+              </span>
+            ) : (
+              'Asenna kuvankäsittely.fi'
+            )}
+          </button>
+        </article>
+      </div>
+    </section>
   );
 };

@@ -1,16 +1,23 @@
-export const Logo = ({ className = "" }: { className?: string }) => {
+interface LogoProps {
+  size?: number;
+  className?: string;
+}
+
+export const Logo = ({ size = 144, className = "" }: LogoProps) => {
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <img
-        src="/pwa-192x192.png"
-        alt=""
-        width={40}
-        height={40}
-        className="h-10 w-10 rounded-xl"
-      />
-      <span className="text-xl font-bold tracking-tight text-auburn leading-none">
-        kuvankäsittely<span className="text-charcoal/40">.fi</span>
-      </span>
-    </div>
+    <img
+      src="/pwa-512x512.png"
+      alt="kuvankäsittely.fi"
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+      className={`rounded-[22%] shadow-lg shadow-auburn/20 ${className}`}
+    />
   );
 };
+
+export const Wordmark = ({ className = "" }: { className?: string }) => (
+  <span className={`font-bold tracking-tight text-auburn leading-none ${className}`}>
+    kuvankäsittely<span className="text-charcoal/40">.fi</span>
+  </span>
+);
