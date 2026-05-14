@@ -275,6 +275,8 @@ function App() {
                         type="button"
                         onClick={() => setBatchAspectLocked((value) => !value)}
                         className="rounded-xl border border-charcoal/10 bg-white p-2 text-charcoal/50"
+                        aria-label={batchAspectLocked ? 'Vapauta kuvasuhde' : 'Lukitse kuvasuhde'}
+                        aria-pressed={batchAspectLocked}
                         title={batchAspectLocked ? 'Vapauta kuvasuhde' : 'Lukitse kuvasuhde'}
                       >
                         {batchAspectLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
@@ -402,6 +404,7 @@ function App() {
                       placeholder="Kirjoita vesileiman teksti…"
                       value={globalSettings.watermarkText || ''}
                       onChange={(e) => applyGlobalSetting({ watermarkText: e.target.value })}
+                      aria-label="Vesileiman teksti"
                       className="w-full px-4 py-2 rounded-xl border border-charcoal/10 text-sm focus:border-auburn outline-none transition-colors"
                     />
                   </div>

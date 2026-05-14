@@ -30,7 +30,7 @@ The source is open under MIT — verify it yourself.
 
 ## Stack
 
-React 19 · TypeScript · Vite · Tailwind CSS v4 · Framer Motion · `browser-image-compression` · `vite-plugin-pwa`
+React 19 · TypeScript · Vite · Tailwind CSS v4 · Framer Motion · `vite-plugin-pwa`
 
 ## Development
 
@@ -44,10 +44,10 @@ npm run lint
 
 ### Generating PWA icons
 
-Source logo is `public/logo.png`. To regenerate all icon sizes:
+Source logo is `assets/logo.png` (outside `public/` so the 1.6 MB original isn't shipped). To regenerate all icon sizes:
 
 ```bash
-npx pwa-assets-generator --preset minimal-2023 public/logo.png
+npx pwa-assets-generator --preset minimal-2023 assets/logo.png
 ```
 
 ## Deployment

@@ -12,6 +12,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
+        id: '/',
         name: 'kuvankäsittely.fi',
         short_name: 'kuvankäsittely',
         description:

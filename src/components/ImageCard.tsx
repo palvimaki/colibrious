@@ -141,7 +141,9 @@ export const ImageCard: React.FC<ImageCardProps> = ({
           isPreview: result.isPreview,
         });
       } catch (error) {
-        console.error('Preview failed:', error);
+        if (import.meta.env.DEV) {
+          console.error('Preview failed:', error);
+        }
       } finally {
         if (!cancelled) setIsPreviewing(false);
       }
@@ -424,7 +426,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         )}
 
         {!cropOpen && (
-          <div className="absolute inset-0 bg-charcoal/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          <div className="absolute inset-0 bg-charcoal/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => onDownload(image.id)}
