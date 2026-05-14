@@ -49,7 +49,10 @@ export const InstallHint = () => {
   };
 
   return (
-    <section className="w-full max-w-xl mx-auto pt-4 text-left">
+    <section
+      id="asenna"
+      className="w-full max-w-xl mx-auto pt-4 text-left scroll-mt-24"
+    >
       <h2 className="text-[11px] font-bold uppercase tracking-[0.15em] text-charcoal/40 mb-3 text-center">
         Asenna sovellus
       </h2>

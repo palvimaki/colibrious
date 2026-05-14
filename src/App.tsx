@@ -3,6 +3,7 @@ import { Logo, Wordmark } from './components/Logo';
 import { Dropzone } from './components/Dropzone';
 import { ImageCard } from './components/ImageCard';
 import { InstallHint } from './components/InstallHint';
+import { InstallBanner } from './components/InstallBanner';
 import { useImageProcessor } from './hooks/useImageProcessor';
 import {
   Settings2,
@@ -112,6 +113,7 @@ function App() {
 
   return (
     <div className="min-h-svh flex flex-col">
+      {images.length === 0 && <InstallBanner />}
       {/* Header */}
       <header
         className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/5 px-4 sm:px-6 py-3"
