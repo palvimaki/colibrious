@@ -31,11 +31,13 @@ const REPO_URL = 'https://github.com/palvimaki/kuvankasittely.fi';
 function App() {
   const {
     images,
+    errors,
     addFiles,
     updateTransformations,
     removeImage,
     downloadImage,
     clearImages,
+    clearErrors,
   } = useImageProcessor();
 
   const [globalSettings, setGlobalSettings] = useState<ImageTransformations>(DEFAULT_TRANSFORMATIONS);
@@ -136,6 +138,31 @@ function App() {
       </header>
 
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-8">
+        {errors.length > 0 && (
+          <div
+            role="alert"
+            className="mx-auto max-w-2xl space-y-1 rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-700"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <ul className="space-y-1">
+                {errors.map((entry, index) => (
+                  <li key={`${entry.file}-${index}`}>
+                    <strong className="font-semibold">{entry.file}:</strong> {entry.reason}
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={clearErrors}
+                className="shrink-0 text-xs font-semibold text-red-700/70 hover:text-red-700"
+                aria-label="Sulje virheilmoitukset"
+              >
+                Sulje
+              </button>
+            </div>
+          </div>
+        )}
+
         {images.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -343,6 +370,7 @@ function App() {
                           step="0.01"
                           value={globalSettings.quality}
                           onChange={(e) => applyGlobalSetting({ quality: parseFloat(e.target.value) })}
+                          aria-label="Pakkauslaatu"
                           className="w-full accent-auburn"
                         />
                       </div>
@@ -358,6 +386,7 @@ function App() {
                         max="200"
                         value={globalSettings.brightness}
                         onChange={(e) => applyGlobalSetting({ brightness: parseInt(e.target.value) })}
+                        aria-label="Kirkkaus"
                         className="w-full accent-auburn"
                       />
                     </div>

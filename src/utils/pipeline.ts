@@ -155,42 +155,74 @@ const drawWatermark = (canvas: CanvasLike, ops: PipelineOps) => {
   ctx.restore();
 };
 
-export const runPipeline: Pipeline = async (source, ops) => {
+export interface PipelineOptions {
+  previewMaxEdge?: number;
+}
+
+export interface PipelineResult {
+  blob: Blob;
+  width: number;
+  height: number;
+  sizeEstimate: number;
+  isPreview: boolean;
+}
+
+export const runPipeline = async (
+  source: ImageBitmap,
+  ops: PipelineOps,
+  options: PipelineOptions = {}
+): Promise<PipelineResult> => {
   const crop = sanitizeCrop(source, ops.crop);
   const resized = sanitizeResize(ops.resize, crop);
 
-  const cropResizeCanvas = createCanvas(resized.w, resized.h);
-  const cropResizeCtx = get2d(cropResizeCanvas);
-  cropResizeCtx.drawImage(
-    source,
-    crop.x,
-    crop.y,
-    crop.w,
-    crop.h,
-    0,
-    0,
-    resized.w,
-    resized.h
-  );
-
   const isSideways = ops.rotation === 90 || ops.rotation === 270;
-  const outputWidth = isSideways ? resized.h : resized.w;
-  const outputHeight = isSideways ? resized.w : resized.h;
+  const trueOutputWidth = isSideways ? resized.h : resized.w;
+  const trueOutputHeight = isSideways ? resized.w : resized.h;
+
+  const longestTrue = Math.max(trueOutputWidth, trueOutputHeight);
+  const scale =
+    options.previewMaxEdge && longestTrue > options.previewMaxEdge
+      ? options.previewMaxEdge / longestTrue
+      : 1;
+  const isPreview = scale < 1;
+
+  const scaledW = Math.max(1, Math.round(resized.w * scale));
+  const scaledH = Math.max(1, Math.round(resized.h * scale));
+
+  const cropResizeCanvas = createCanvas(scaledW, scaledH);
+  const cropResizeCtx = get2d(cropResizeCanvas);
+  cropResizeCtx.drawImage(source, crop.x, crop.y, crop.w, crop.h, 0, 0, scaledW, scaledH);
+
+  const outputWidth = isSideways ? scaledH : scaledW;
+  const outputHeight = isSideways ? scaledW : scaledH;
   const outputCanvas = createCanvas(outputWidth, outputHeight);
   const outputCtx = get2d(outputCanvas);
+
+  if (ops.format === 'image/jpeg') {
+    outputCtx.fillStyle = '#ffffff';
+    outputCtx.fillRect(0, 0, outputWidth, outputHeight);
+  }
 
   outputCtx.save();
   outputCtx.translate(outputWidth / 2, outputHeight / 2);
   outputCtx.rotate((ops.rotation * Math.PI) / 180);
   outputCtx.scale(ops.flipH ? -1 : 1, ops.flipV ? -1 : 1);
-  outputCtx.drawImage(cropResizeCanvas as Drawable, -resized.w / 2, -resized.h / 2);
+  outputCtx.drawImage(cropResizeCanvas as Drawable, -scaledW / 2, -scaledH / 2);
   outputCtx.restore();
 
   const filteredCanvas = applyPixelFilters(outputCanvas, ops);
   drawWatermark(filteredCanvas, ops);
 
   const blob = await canvasToBlob(filteredCanvas, ops.format, ops.quality);
-  return { blob, width: outputWidth, height: outputHeight };
+  const sizeEstimate = isPreview ? Math.round(blob.size / (scale * scale)) : blob.size;
+
+  return {
+    blob,
+    width: trueOutputWidth,
+    height: trueOutputHeight,
+    sizeEstimate,
+    isPreview,
+  };
 };
 
 export const decodeImage = async (file: Blob): Promise<ImageBitmap> => {

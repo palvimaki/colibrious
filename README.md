@@ -4,7 +4,7 @@
 
 A privacy-first, client-side image processing PWA. Every byte stays on your device — there is no upload, no account, no cookie, no analytics. Install it to your home screen and it works offline.
 
-🌐 Live: **[kuvankäsittely.fi](https://kuvankäsittely.fi/)** *(domain not yet pointed; running locally for now)*
+🌐 Live: **[kuvankäsittely.fi](https://kuvankäsittely.fi/)**
 
 ## Features
 

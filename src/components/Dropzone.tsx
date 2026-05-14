@@ -55,8 +55,9 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, className }
       <input
         type="file"
         multiple
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp"
         onChange={handleFileInput}
+        aria-label="Valitse kuvat"
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       />
       
@@ -67,7 +68,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, className }
         <div>
           <h3 className="text-xl font-semibold text-charcoal">Pudota kuvat tähän</h3>
           <p className="text-sm text-charcoal/60 mt-1">
-            PNG, JPEG, WebP, GIF — kaikki onnistuvat.
+            PNG, JPEG tai WebP — enintään 50 MB / tiedosto.
           </p>
         </div>
         <div className="flex items-center gap-2 text-auburn font-medium bg-auburn/10 px-4 py-2 rounded-full text-sm">

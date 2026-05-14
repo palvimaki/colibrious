@@ -26,7 +26,7 @@ type CropMode = 'free' | '1:1' | '4:3' | '16:9' | '3:2';
 type DragMode = 'move' | 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 
 const ASPECTS: Array<{ label: string; mode: CropMode; ratio?: number }> = [
-  { label: 'Free', mode: 'free' },
+  { label: 'Vapaa', mode: 'free' },
   { label: '1:1', mode: '1:1', ratio: 1 },
   { label: '4:3', mode: '4:3', ratio: 4 / 3 },
   { label: '16:9', mode: '16:9', ratio: 16 / 9 },
@@ -82,9 +82,12 @@ export const ImageCard: React.FC<ImageCardProps> = ({
   } | null>(null);
 
   const [previewSrc, setPreviewSrc] = useState<string>(image.previewUrl);
-  const [previewMeta, setPreviewMeta] = useState<{ width: number; height: number; size: number } | null>(
-    null
-  );
+  const [previewMeta, setPreviewMeta] = useState<{
+    width: number;
+    height: number;
+    size: number;
+    isPreview: boolean;
+  } | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [cropOpen, setCropOpen] = useState(false);
@@ -113,7 +116,9 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         const source = await decodeImage(image.originalFile);
         let result: Awaited<ReturnType<typeof runPipeline>>;
         try {
-          result = await runPipeline(source, toPipelineOps(currentTransformations));
+          result = await runPipeline(source, toPipelineOps(currentTransformations), {
+            previewMaxEdge: 1600,
+          });
         } finally {
           source.close();
         }
@@ -129,7 +134,12 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         }
         previewUrlRef.current = nextUrl;
         setPreviewSrc(nextUrl);
-        setPreviewMeta({ width: result.width, height: result.height, size: result.blob.size });
+        setPreviewMeta({
+          width: result.width,
+          height: result.height,
+          size: result.sizeEstimate,
+          isPreview: result.isPreview,
+        });
       } catch (error) {
         console.error('Preview failed:', error);
       } finally {
@@ -360,7 +370,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                   <button
                     key={mode}
                     type="button"
-                    aria-label={`Crop handle ${mode}`}
+                    aria-label={`Rajauskahva ${mode}`}
                     className={`absolute h-4 w-4 rounded-full border-2 border-white bg-auburn ${position}`}
                     onPointerDown={(event) => startDrag(mode, event)}
                     onPointerMove={(event) => updateDrag(event.clientX, event.clientY)}
@@ -399,7 +409,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                 className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-auburn px-3 py-2 text-xs font-bold text-white"
               >
                 <Check className="h-4 w-4" />
-                Apply
+                Käytä
               </button>
               <button
                 type="button"
@@ -407,7 +417,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                 className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 text-xs font-bold text-charcoal"
               >
                 <X className="h-4 w-4" />
-                Cancel
+                Peruuta
               </button>
             </div>
           </div>
@@ -419,7 +429,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
               type="button"
               onClick={() => onDownload(image.id)}
               className="p-3 bg-white text-auburn rounded-full hover:scale-110 transition-transform"
-              title="Download"
+              aria-label="Lataa kuva"
+              title="Lataa"
             >
               <Download className="w-5 h-5" />
             </button>
@@ -427,7 +438,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
               type="button"
               onClick={() => onRemove(image.id)}
               className="p-3 bg-white text-red-500 rounded-full hover:scale-110 transition-transform"
-              title="Remove"
+              aria-label="Poista kuva"
+              title="Poista"
             >
               <Trash2 className="w-5 h-5" />
             </button>
@@ -442,14 +454,18 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             <div className="mt-1 flex flex-wrap gap-1 text-[10px] font-semibold text-charcoal/45">
               <span>{image.originalWidth}×{image.originalHeight}</span>
               <span>→ {previewMeta ? `${previewMeta.width}×${previewMeta.height}` : `${baseSize.w}×${baseSize.h}`}</span>
-              <span>{formatBytes(image.originalFile.size)} → {previewMeta ? formatBytes(previewMeta.size) : '...'}</span>
+              <span>
+                {formatBytes(image.originalFile.size)} →{' '}
+                {previewMeta ? `${previewMeta.isPreview ? '≈ ' : ''}${formatBytes(previewMeta.size)}` : '…'}
+              </span>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setAdjustOpen((value) => !value)}
             className="text-charcoal/20 hover:text-auburn transition-colors"
-            title="Adjust"
+            aria-label="Säädöt"
+            title="Säädöt"
           >
             <MoreHorizontal className="w-5 h-5" />
           </button>
@@ -464,7 +480,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
               })
             }
             className="p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            title="Rotate 90°"
+            aria-label="Kierrä 90 astetta"
+            title="Kierrä 90°"
           >
             <RotateCw className="w-4 h-4" />
           </button>
@@ -472,7 +489,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={() => onUpdateTransform(image.id, { flipHorizontal: !currentTransformations.flipHorizontal })}
             className="p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            title="Flip Horizontal"
+            aria-label="Käännä vaakatasossa"
+            title="Käännä vaakatasossa"
           >
             <FlipHorizontal className="w-4 h-4" />
           </button>
@@ -480,7 +498,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={() => onUpdateTransform(image.id, { flipVertical: !currentTransformations.flipVertical })}
             className="p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            title="Flip Vertical"
+            aria-label="Käännä pystysuunnassa"
+            title="Käännä pystysuunnassa"
           >
             <FlipVertical className="w-4 h-4" />
           </button>
@@ -488,7 +507,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={openCrop}
             className="p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            title="Crop"
+            aria-label="Rajaa"
+            title="Rajaa"
           >
             <Crop className="w-4 h-4" />
           </button>
@@ -496,7 +516,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             type="button"
             onClick={() => setAdjustOpen((value) => !value)}
             className="ml-auto p-2 hover:bg-auburn/10 rounded-xl text-charcoal/60 hover:text-auburn transition-colors"
-            title="Adjust"
+            aria-label="Säädöt"
+            title="Säädöt"
           >
             <SlidersHorizontal className="w-4 h-4" />
           </button>
@@ -505,7 +526,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
         {adjustOpen && (
           <div className="space-y-4 rounded-2xl border border-charcoal/5 bg-charcoal/[0.02] p-3">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase text-charcoal/45">Format</label>
+              <label className="text-[10px] font-bold uppercase text-charcoal/45">Muoto</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['image/png', 'image/jpeg', 'image/webp'] as ImageTransformations['format'][]).map((format) => (
                   <button
@@ -526,12 +547,12 @@ export const ImageCard: React.FC<ImageCardProps> = ({
 
             {currentTransformations.format === 'image/png' ? (
               <span className="inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase text-emerald-700">
-                Lossless
+                Häviötön
               </span>
             ) : (
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <label className="text-[10px] font-bold uppercase text-charcoal/45">Quality</label>
+                  <label className="text-[10px] font-bold uppercase text-charcoal/45">Laatu</label>
                   <span className="text-[10px] font-bold text-auburn">
                     {Math.round(currentTransformations.quality * 100)}%
                   </span>
@@ -543,6 +564,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
                   step="0.01"
                   value={currentTransformations.quality}
                   onChange={(event) => onUpdateTransform(image.id, { quality: Number(event.target.value) })}
+                  aria-label="Pakkauslaatu"
                   className="w-full accent-auburn"
                 />
               </div>
