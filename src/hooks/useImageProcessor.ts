@@ -203,8 +203,27 @@ export const useImageProcessor = () => {
           }
           const bytes = new Uint8Array(await result.blob.arrayBuffer());
           const embedded = await pdf.embedJpg(bytes);
-          const page = pdf.addPage([embedded.width, embedded.height]);
-          page.drawImage(embedded, { x: 0, y: 0, width: embedded.width, height: embedded.height });
+
+          // Uniform A4 pages, orientation chosen per image, fit-and-center.
+          const A4_SHORT = 595.28;
+          const A4_LONG = 841.89;
+          const MARGIN = 12;
+          const isLandscape = embedded.width >= embedded.height;
+          const pageW = isLandscape ? A4_LONG : A4_SHORT;
+          const pageH = isLandscape ? A4_SHORT : A4_LONG;
+          const scale = Math.min(
+            (pageW - MARGIN * 2) / embedded.width,
+            (pageH - MARGIN * 2) / embedded.height
+          );
+          const drawW = embedded.width * scale;
+          const drawH = embedded.height * scale;
+          const page = pdf.addPage([pageW, pageH]);
+          page.drawImage(embedded, {
+            x: (pageW - drawW) / 2,
+            y: (pageH - drawH) / 2,
+            width: drawW,
+            height: drawH,
+          });
         } catch (error) {
           pushError({
             file: img.originalFile.name,
