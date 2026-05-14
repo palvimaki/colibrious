@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Logo, Wordmark } from './components/Logo';
 import { Dropzone } from './components/Dropzone';
 import { ImageCard } from './components/ImageCard';
@@ -15,6 +15,7 @@ import {
   Unlock,
   ShieldCheck,
   FileText,
+  Upload,
 } from 'lucide-react';
 
 const GithubIcon = ({ className = '' }: { className?: string }) => (
@@ -50,6 +51,50 @@ function App() {
   const [batchWidth, setBatchWidth] = useState('');
   const [batchHeight, setBatchHeight] = useState('');
   const [batchFitEdge, setBatchFitEdge] = useState('');
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const dragDepth = useRef(0);
+
+  useEffect(() => {
+    const hasFiles = (event: DragEvent) =>
+      Array.from(event.dataTransfer?.types ?? []).includes('Files');
+
+    const onDragEnter = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current += 1;
+      setIsDraggingFiles(true);
+    };
+    const onDragOver = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+    };
+    const onDragLeave = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setIsDraggingFiles(false);
+    };
+    const onDrop = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepth.current = 0;
+      setIsDraggingFiles(false);
+      const files = event.dataTransfer?.files;
+      if (files && files.length > 0) {
+        addFiles(Array.from(files));
+      }
+    };
+
+    window.addEventListener('dragenter', onDragEnter);
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('dragleave', onDragLeave);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      window.removeEventListener('dragenter', onDragEnter);
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('dragleave', onDragLeave);
+      window.removeEventListener('drop', onDrop);
+    };
+  }, [addFiles]);
 
   const applyGlobalSetting = (setting: Partial<ImageTransformations>) => {
     setGlobalSettings(prev => ({ ...prev, ...setting }));
@@ -116,6 +161,18 @@ function App() {
 
   return (
     <div className="min-h-svh flex flex-col">
+      {isDraggingFiles && (
+        <div
+          aria-hidden="true"
+          className="fixed inset-0 z-[100] pointer-events-none flex items-center justify-center bg-auburn/15 backdrop-blur-sm p-6"
+        >
+          <div className="rounded-3xl border-4 border-dashed border-auburn bg-white/85 px-10 py-12 text-center shadow-2xl">
+            <Upload className="mx-auto h-16 w-16 text-auburn" />
+            <p className="mt-4 text-2xl font-bold text-auburn">Pudota kuvat mihin tahansa</p>
+            <p className="mt-1 text-sm text-charcoal/60">PNG, JPEG tai WebP</p>
+          </div>
+        </div>
+      )}
       {images.length === 0 && <InstallBanner />}
       {/* Header */}
       <header

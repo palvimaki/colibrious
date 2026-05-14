@@ -25,9 +25,12 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, className }
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
+    // Window-level handler in App.tsx ingests the files; stop here so the
+    // same drop event is not processed twice.
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       onFilesSelected(Array.from(e.dataTransfer.files));
     }
