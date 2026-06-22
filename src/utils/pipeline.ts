@@ -57,6 +57,8 @@ const get2d = (canvas: CanvasLike, willReadFrequently = false) => {
 const hasPixelFilter = (ops: PipelineOps) =>
   ops.brightness !== 100 || ops.contrast !== 100 || ops.grayscale || ops.sepia;
 
+const KNOWN_FORMATS: ReadonlySet<string> = new Set(['image/png', 'image/jpeg', 'image/webp']);
+
 const canvasToBlob = async (
   canvas: CanvasLike,
   type: PipelineOps['format'],
@@ -79,7 +81,14 @@ const canvasToBlob = async (
   })();
 
   if (blob) {
-    return { blob, type };
+    // Derive the ACTUAL format from the blob's own type. Some browsers, when
+    // asked for an unsupported type (notably WebP on older Safari), hand back a
+    // PNG blob instead of null. Trusting the requested type here would save PNG
+    // bytes under a .webp name (and mislabel the result).
+    const actual = KNOWN_FORMATS.has(blob.type)
+      ? (blob.type as PipelineOps['format'])
+      : type;
+    return { blob, type: actual };
   }
 
   // WebP encode is not supported by every browser (notably older Safari).
@@ -268,7 +277,9 @@ export const supportsWebpEncode = (): Promise<boolean> => {
       probe.width = 1;
       probe.height = 1;
       probe.toBlob((blob) => {
-        webpEncodeSupported = !!blob;
+        // Some browsers return a PNG blob (not null) when WebP encode is
+        // unsupported, so the type must match, not just truthiness.
+        webpEncodeSupported = !!blob && blob.type === 'image/webp';
         resolve(webpEncodeSupported);
       }, 'image/webp');
     } catch {

@@ -11,8 +11,10 @@
  * the writer tiny and dependency-free while producing a standard .zip that
  * every OS can open.
  *
- * No ZIP64: this targets the app's real input range (≤ ~50 MB × a moderate
- * image count). Total size and offsets must stay under 4 GiB.
+ * Classic ZIP only (no ZIP64): entry count, sizes, and offsets must each fit
+ * in 16/32-bit fields. `u16`/`u32` THROW on overflow rather than silently
+ * wrapping, so an out-of-range batch raises a user-visible error instead of
+ * producing a saved-but-corrupt archive.
  */
 
 const CRC_TABLE = (() => {
@@ -49,112 +51,113 @@ const dosDateTime = (d: Date) => ({
 
 export interface ZipEntry {
   name: string;
-  data: Uint8Array;
+  data: Uint8Array<ArrayBuffer>;
 }
 
+/** Throws on overflow so a too-big archive fails loudly instead of corrupting. */
+const u16 = (v: number): Uint8Array<ArrayBuffer> => {
+  if (!Number.isInteger(v) || v < 0 || v > 0xffff) {
+    throw new Error(`ZIP 16-bit field out of range: ${v}`);
+  }
+  const b = new Uint8Array(2);
+  new DataView(b.buffer).setUint16(0, v, true);
+  return b;
+};
+
+/** Throws on overflow so a too-big archive fails loudly instead of corrupting. */
+const u32 = (v: number): Uint8Array<ArrayBuffer> => {
+  if (!Number.isInteger(v) || v < 0 || v > 0xffffffff) {
+    throw new Error(`ZIP 32-bit field out of range: ${v}`);
+  }
+  const b = new Uint8Array(4);
+  new DataView(b.buffer).setUint32(0, v, true);
+  return b;
+};
+
 export const createZip = (entries: ZipEntry[]): Blob => {
-  const chunks: Uint8Array[] = [];
-  const central: Uint8Array[] = [];
-  let offset = 0;
+  if (entries.length > 0xffff) {
+    throw new Error('Too many files to zip (limit 65,535).');
+  }
+
+  const chunks: BlobPart[] = [];
   const enc = new TextEncoder();
   const { time, date } = dosDateTime(new Date());
+  let offset = 0;
 
-  const emit = (bytes: Uint8Array) => {
+  // Each piece is pushed as its own BlobPart — entry bytes are referenced,
+  // never copied, so peak memory stays ~the sum of the inputs.
+  const emit = (bytes: Uint8Array<ArrayBuffer>) => {
     chunks.push(bytes);
     offset += bytes.length;
   };
-  const u16 = (v: number) => {
-    const b = new Uint8Array(2);
-    new DataView(b.buffer).setUint16(0, v & 0xffff, true);
-    return b;
-  };
-  const u32 = (v: number) => {
-    const b = new Uint8Array(4);
-    new DataView(b.buffer).setUint32(0, v >>> 0, true);
-    return b;
-  };
-  const concat = (parts: Uint8Array[]) => {
-    let len = 0;
-    for (const p of parts) len += p.length;
-    const out = new Uint8Array(len);
-    let i = 0;
-    for (const p of parts) {
-      out.set(p, i);
-      i += p.length;
-    }
-    return out;
-  };
+
+  const central: {
+    offset: number;
+    nameBytes: Uint8Array<ArrayBuffer>;
+    crc: number;
+    size: number;
+    flags: number;
+  }[] = [];
 
   for (const entry of entries) {
-    const nameBytes = enc.encode(entry.name);
+    const nameBytes = new Uint8Array(enc.encode(entry.name));
     // Set the UTF-8 language-encoding flag (bit 11) when the name has
     // non-ASCII bytes — required so Finnish/unicode filenames extract correctly.
     const flags = nameBytes.some((b) => b >= 0x80) ? 0x0800 : 0x0000;
     const crc = crc32(entry.data);
     const size = entry.data.length;
     const localHeaderOffset = offset;
+    central.push({ offset: localHeaderOffset, nameBytes, crc, size, flags });
 
     // Local file header (signature 0x04034b50).
-    emit(
-      concat([
-        Uint8Array.of(0x50, 0x4b, 0x03, 0x04),
-        u16(20), // version needed to extract (2.0)
-        u16(flags), // general purpose bit flag
-        u16(0), // compression method: 0 = stored
-        u16(time),
-        u16(date),
-        u32(crc),
-        u32(size), // compressed size
-        u32(size), // uncompressed size
-        u16(nameBytes.length),
-        u16(0), // extra field length
-        nameBytes,
-        entry.data,
-      ])
-    );
-
-    // Central directory file header (signature 0x02014b50).
-    central.push(
-      concat([
-        Uint8Array.of(0x50, 0x4b, 0x01, 0x02),
-        u16(20), // version made by
-        u16(20), // version needed to extract
-        u16(flags), // general purpose bit flag
-        u16(0), // compression method: 0 = stored
-        u16(time),
-        u16(date),
-        u32(crc),
-        u32(size), // compressed size
-        u32(size), // uncompressed size
-        u16(nameBytes.length),
-        u16(0), // extra field length
-        u16(0), // file comment length
-        u16(0), // disk number start
-        u16(0), // internal file attributes
-        u32(0), // external file attributes
-        u32(localHeaderOffset), // relative offset of local header
-        nameBytes,
-      ])
-    );
+    emit(Uint8Array.of(0x50, 0x4b, 0x03, 0x04));
+    emit(u16(20)); // version needed to extract (2.0)
+    emit(u16(flags)); // general purpose bit flag
+    emit(u16(0)); // compression method: 0 = stored
+    emit(u16(time));
+    emit(u16(date));
+    emit(u32(crc));
+    emit(u32(size)); // compressed size
+    emit(u32(size)); // uncompressed size
+    emit(u16(nameBytes.length));
+    emit(u16(0)); // extra field length
+    emit(nameBytes);
+    emit(entry.data);
   }
 
-  const centralBytes = concat(central);
   const centralOffset = offset;
-  emit(centralBytes);
+  for (const c of central) {
+    // Central directory file header (signature 0x02014b50).
+    emit(Uint8Array.of(0x50, 0x4b, 0x01, 0x02));
+    emit(u16(20)); // version made by
+    emit(u16(20)); // version needed to extract
+    emit(u16(c.flags)); // general purpose bit flag
+    emit(u16(0)); // compression method: 0 = stored
+    emit(u16(time));
+    emit(u16(date));
+    emit(u32(c.crc));
+    emit(u32(c.size)); // compressed size
+    emit(u32(c.size)); // uncompressed size
+    emit(u16(c.nameBytes.length));
+    emit(u16(0)); // extra field length
+    emit(u16(0)); // file comment length
+    emit(u16(0)); // disk number start
+    emit(u16(0)); // internal file attributes
+    emit(u32(0)); // external file attributes
+    emit(u32(c.offset)); // relative offset of local header
+    emit(c.nameBytes);
+  }
+  const centralSize = offset - centralOffset;
 
   // End of central directory record (signature 0x06054b50).
-  emit(
-    concat([
-      Uint8Array.of(0x50, 0x4b, 0x05, 0x06),
-      u16(0), // number of this disk
-      u16(0), // disk where central directory starts
-      u16(entries.length), // central directory records on this disk
-      u16(entries.length), // total central directory records
-      u32(centralBytes.length), // size of central directory
-      u32(centralOffset), // offset of start of central directory
-      u16(0), // comment length
-    ])
-  );
+  emit(Uint8Array.of(0x50, 0x4b, 0x05, 0x06));
+  emit(u16(0)); // number of this disk
+  emit(u16(0)); // disk where central directory starts
+  emit(u16(entries.length)); // central directory records on this disk
+  emit(u16(entries.length)); // total central directory records
+  emit(u32(centralSize)); // size of central directory
+  emit(u32(centralOffset)); // offset of start of central directory
+  emit(u16(0)); // comment length
 
-  return new Blob([concat(chunks)], { type: 'application/zip' });
+  return new Blob(chunks, { type: 'application/zip' });
 };
