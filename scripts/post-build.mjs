@@ -93,7 +93,7 @@ const fiHtml = enHtml
   )
   .replace(
     /<meta name="twitter:description" content="[^"]*" \/>/,
-    '<meta name="twitter:description" content="Privacy-first image processing in your browser. Ei kirjautumista, toimii ilman verkkoa." />',
+    '<meta name="twitter:description" content="Muokkaa kuvia nopeasti ja yksityisesti selaimessasi. Ei kirjautumista, toimii ilman verkkoa." />',
   )
   .replace(
     /<meta name="twitter:image" content="[^"]*" \/>/,

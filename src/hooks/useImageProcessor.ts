@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react';
-import { DEFAULT_TRANSFORMATIONS } from '../types/image';
+import { DEFAULT_TRANSFORMATIONS, toPipelineOps } from '../types/image';
 import type { ProcessedImage, ImageTransformations } from '../types/image';
 import { decodeImage, runPipeline } from '../utils/pipeline';
+import { createZip } from '../utils/zip';
+import type { ZipEntry } from '../utils/zip';
 import { saveAs } from 'file-saver';
 import { useStrings } from '../i18n/useStrings';
 
@@ -12,6 +14,7 @@ const ACCEPTED_TYPES: ReadonlyArray<ImageTransformations['format']> = [
 ];
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB per file
+const MAX_PIXELS = 50_000_000; // 50 MP decoded — guards against tab OOM on giant images
 
 export interface FileError {
   file: string;
@@ -32,30 +35,12 @@ const loadDimensions = (url: string) =>
     img.src = url;
   });
 
-const toPipelineOps = (transformations: ImageTransformations) => ({
-  crop: transformations.crop,
-  resize:
-    transformations.width && transformations.height
-      ? { w: transformations.width, h: transformations.height }
-      : undefined,
-  rotation: transformations.rotation,
-  flipH: transformations.flipHorizontal,
-  flipV: transformations.flipVertical,
-  brightness: transformations.brightness,
-  contrast: transformations.contrast,
-  grayscale: transformations.grayscale,
-  sepia: transformations.sepia,
-  format: transformations.format,
-  quality: transformations.quality,
-  watermarkText: transformations.watermarkText,
-  watermarkOpacity: transformations.watermarkOpacity,
-});
-
 export const useImageProcessor = () => {
   const t = useStrings();
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [errors, setErrors] = useState<FileError[]>([]);
   const [isBuildingPdf, setIsBuildingPdf] = useState(false);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
   const pushError = useCallback((entry: FileError) => {
     setErrors((prev) => [...prev, entry]);
@@ -89,6 +74,15 @@ export const useImageProcessor = () => {
         const previewUrl = URL.createObjectURL(file);
         try {
           const dimensions = await loadDimensions(previewUrl);
+          const pixels = dimensions.width * dimensions.height;
+          if (pixels > MAX_PIXELS) {
+            URL.revokeObjectURL(previewUrl);
+            pushError({
+              file: file.name,
+              reason: t.tooManyPixels((pixels / 1_000_000).toFixed(0)),
+            });
+            continue;
+          }
           accepted.push({
             id: Math.random().toString(36).slice(2, 11),
             originalFile: file,
@@ -137,13 +131,10 @@ export const useImageProcessor = () => {
     });
   }, []);
 
-  const processImage = useCallback(
-    async (id: string) => {
-      const img = images.find((i) => i.id === id);
-      if (!img) return;
-
-      setImages((prev) => prev.map((i) => (i.id === id ? { ...i, isProcessing: true } : i)));
-
+  /** Decode + run the pipeline for one image, surfacing errors. Returns the
+   *  actual encoded format so callers can name files correctly (WebP→PNG etc.). */
+  const getOutputBlob = useCallback(
+    async (img: ProcessedImage): Promise<{ blob: Blob; extension: string } | null> => {
       try {
         const source = await decodeImage(img.originalFile);
         let result: Awaited<ReturnType<typeof runPipeline>>;
@@ -152,18 +143,16 @@ export const useImageProcessor = () => {
         } finally {
           source.close();
         }
-
-        setImages((prev) => prev.map((i) => (i.id === id ? { ...i, isProcessing: false } : i)));
-        return result.blob;
+        return { blob: result.blob, extension: result.format.split('/')[1] };
       } catch (error) {
-        setImages((prev) => prev.map((i) => (i.id === id ? { ...i, isProcessing: false } : i)));
         pushError({
           file: img.originalFile.name,
           reason: error instanceof Error ? error.message : t.processingFailed,
         });
+        return null;
       }
     },
-    [images, pushError, t]
+    [pushError, t]
   );
 
   const downloadImage = useCallback(
@@ -171,16 +160,50 @@ export const useImageProcessor = () => {
       const img = images.find((i) => i.id === id);
       if (!img) return;
 
-      const blob = await processImage(id);
-      if (blob) {
-        const extension = img.currentTransformations.format.split('/')[1];
-        const fileName =
-          img.originalFile.name.replace(/\.[^/.]+$/, '') + `-${t.downloadSuffix}.${extension}`;
-        saveAs(blob, fileName);
+      setImages((prev) => prev.map((i) => (i.id === id ? { ...i, isProcessing: true } : i)));
+      const out = await getOutputBlob(img);
+      if (out) {
+        const base = img.originalFile.name.replace(/\.[^/.]+$/, '');
+        saveAs(out.blob, `${base}-${t.downloadSuffix}.${out.extension}`);
       }
+      setImages((prev) => prev.map((i) => (i.id === id ? { ...i, isProcessing: false } : i)));
     },
-    [images, processImage, t]
+    [images, getOutputBlob, t]
   );
+
+  /** Download every image as a single .zip. One saveAs — no browser multi-download blocking. */
+  const downloadAll = useCallback(async () => {
+    if (images.length === 0 || isDownloadingAll) return;
+    setIsDownloadingAll(true);
+    try {
+      const entries: ZipEntry[] = [];
+      const taken = new Set<string>();
+      for (const img of images) {
+        const out = await getOutputBlob(img);
+        if (!out) continue; // error already pushed
+        const base = `${img.originalFile.name.replace(/\.[^/.]+$/, '')}-${t.downloadSuffix}`;
+        const dotExt = `.${out.extension}`;
+        let name = `${base}${dotExt}`;
+        if (taken.has(name)) {
+          let n = 1;
+          while (taken.has(`${base} (${n})${dotExt}`)) n += 1;
+          name = `${base} (${n})${dotExt}`;
+        }
+        taken.add(name);
+        entries.push({ name, data: new Uint8Array(await out.blob.arrayBuffer()) });
+      }
+      if (entries.length === 0) return;
+      const zip = createZip(entries);
+      saveAs(zip, t.zipFilename(entries.length));
+    } catch (error) {
+      pushError({
+        file: 'ZIP',
+        reason: error instanceof Error ? error.message : t.zipBuildFailed,
+      });
+    } finally {
+      setIsDownloadingAll(false);
+    }
+  }, [images, isDownloadingAll, getOutputBlob, pushError, t]);
 
   const downloadAllAsPdf = useCallback(async () => {
     if (images.length === 0 || isBuildingPdf) return;
@@ -194,6 +217,8 @@ export const useImageProcessor = () => {
           const source = await decodeImage(img.originalFile);
           let result: Awaited<ReturnType<typeof runPipeline>>;
           try {
+            // PDF pages are always JPEG-embedded regardless of the user's chosen
+            // format — size-optimal, and pdf-lib embeds JPG cheaply.
             const ops = toPipelineOps(img.currentTransformations);
             result = await runPipeline(source, {
               ...ops,
@@ -259,12 +284,13 @@ export const useImageProcessor = () => {
     images,
     errors,
     isBuildingPdf,
+    isDownloadingAll,
     clearErrors,
     addFiles,
     updateTransformations,
     removeImage,
-    processImage,
     downloadImage,
+    downloadAll,
     downloadAllAsPdf,
     clearImages,
   };

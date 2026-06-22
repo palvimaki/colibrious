@@ -11,10 +11,11 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import type { ProcessedImage, ImageTransformations } from '../types/image';
-import type { CropRect, PipelineOps } from '../utils/pipeline';
+import { toPipelineOps, type ProcessedImage, type ImageTransformations } from '../types/image';
+import type { CropRect } from '../utils/pipeline';
 import { decodeImage, runPipeline } from '../utils/pipeline';
 import { useStrings } from '../i18n/useStrings';
+import { useWebpEncodeSupport } from '../hooks/useWebpEncodeSupport';
 
 interface ImageCardProps {
   image: ProcessedImage;
@@ -40,25 +41,6 @@ const formatBytes = (bytes: number) => {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 };
 
-const toPipelineOps = (transformations: ImageTransformations): PipelineOps => ({
-  crop: transformations.crop,
-  resize:
-    transformations.width && transformations.height
-      ? { w: transformations.width, h: transformations.height }
-      : undefined,
-  rotation: transformations.rotation,
-  flipH: transformations.flipHorizontal,
-  flipV: transformations.flipVertical,
-  brightness: transformations.brightness,
-  contrast: transformations.contrast,
-  grayscale: transformations.grayscale,
-  sepia: transformations.sepia,
-  format: transformations.format,
-  quality: transformations.quality,
-  watermarkText: transformations.watermarkText,
-  watermarkOpacity: transformations.watermarkOpacity,
-});
-
 const clampRect = (rect: CropRect, maxW: number, maxH: number): CropRect => {
   const w = Math.min(maxW, Math.max(20, Math.round(rect.w)));
   const h = Math.min(maxH, Math.max(20, Math.round(rect.h)));
@@ -74,6 +56,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({
   onUpdateTransform,
 }) => {
   const t = useStrings();
+  const webpSupported = useWebpEncodeSupport();
   const aspectLabel = (mode: CropMode) => (mode === 'free' ? t.free : mode);
   const { currentTransformations } = image;
   const previewUrlRef = useRef<string | null>(null);
@@ -534,20 +517,27 @@ export const ImageCard: React.FC<ImageCardProps> = ({
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase text-charcoal/45">{t.format}</label>
               <div className="grid grid-cols-3 gap-2">
-                {(['image/png', 'image/jpeg', 'image/webp'] as ImageTransformations['format'][]).map((format) => (
+                {(['image/png', 'image/jpeg', 'image/webp'] as ImageTransformations['format'][]).map((format) => {
+                  const unsupported = format === 'image/webp' && !webpSupported;
+                  return (
                   <button
                     key={format}
                     type="button"
+                    disabled={unsupported}
+                    title={unsupported ? t.webpUnsupported : undefined}
                     onClick={() => onUpdateTransform(image.id, { format })}
                     className={`rounded-xl border px-2 py-2 text-[10px] font-bold ${
-                      currentTransformations.format === format
-                        ? 'border-auburn bg-auburn/5 text-auburn'
-                        : 'border-charcoal/10 text-charcoal/45'
+                      unsupported
+                        ? 'cursor-not-allowed border-charcoal/5 text-charcoal/20'
+                        : currentTransformations.format === format
+                          ? 'border-auburn bg-auburn/5 text-auburn'
+                          : 'border-charcoal/10 text-charcoal/45'
                     }`}
                   >
                     {format.split('/')[1].toUpperCase()}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

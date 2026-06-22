@@ -6,6 +6,7 @@ import { InstallHint } from './components/InstallHint';
 import { InstallBanner } from './components/InstallBanner';
 import { useImageProcessor } from './hooks/useImageProcessor';
 import { useStrings } from './i18n/useStrings';
+import { useWebpEncodeSupport } from './hooks/useWebpEncodeSupport';
 import {
   Settings2,
   Download,
@@ -34,14 +35,17 @@ const REPO_URL = 'https://github.com/palvimaki/colibrious';
 
 function App() {
   const t = useStrings();
+  const webpSupported = useWebpEncodeSupport();
   const {
     images,
     errors,
     isBuildingPdf,
+    isDownloadingAll,
     addFiles,
     updateTransformations,
     removeImage,
     downloadImage,
+    downloadAll,
     downloadAllAsPdf,
     clearImages,
     clearErrors,
@@ -108,12 +112,6 @@ function App() {
   const applyGlobalSetting = (setting: Partial<ImageTransformations>) => {
     setGlobalSettings(prev => ({ ...prev, ...setting }));
     images.forEach(img => updateTransformations(img.id, setting));
-  };
-
-  const downloadAll = async () => {
-    for (const img of images) {
-      await downloadImage(img.id);
-    }
   };
 
   const getBaseSize = (image: ProcessedImage) => ({
@@ -208,10 +206,12 @@ function App() {
                 </button>
                 <button
                   onClick={downloadAll}
-                  className="inline-flex items-center gap-2 bg-auburn text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold hover:bg-auburn/90 transition-all shadow-lg shadow-auburn/20 active:scale-95"
+                  disabled={isDownloadingAll}
+                  className="inline-flex items-center gap-2 bg-auburn text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-sm font-semibold hover:bg-auburn/90 transition-all shadow-lg shadow-auburn/20 active:scale-95 disabled:opacity-60 disabled:cursor-wait"
+                  title={t.downloadAllTitle}
                 >
                   <Download className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t.downloadAllShort(images.length)}</span>
+                  <span className="hidden sm:inline">{isDownloadingAll ? t.buildingZip : t.downloadAllShort(images.length)}</span>
                   <span className="sm:hidden">{images.length}</span>
                 </button>
               </>
@@ -311,19 +311,26 @@ function App() {
                       <Layers className="w-3 h-3" /> {t.outputFormat}
                     </label>
                     <div className="grid grid-cols-3 gap-2">
-                      {['image/png', 'image/jpeg', 'image/webp'].map((f) => (
+                      {['image/png', 'image/jpeg', 'image/webp'].map((f) => {
+                        const unsupported = f === 'image/webp' && !webpSupported;
+                        return (
                         <button
                           key={f}
+                          disabled={unsupported}
+                          title={unsupported ? t.webpUnsupported : undefined}
                           onClick={() => applyGlobalSetting({ format: f as ImageTransformations['format'] })}
                           className={`py-2 px-1 text-[10px] font-bold rounded-xl border transition-all ${
-                            globalSettings.format === f
-                              ? 'border-auburn bg-auburn/5 text-auburn'
-                              : 'border-charcoal/10 text-charcoal/40 hover:border-charcoal/20'
+                            unsupported
+                              ? 'cursor-not-allowed border-charcoal/5 text-charcoal/20'
+                              : globalSettings.format === f
+                                ? 'border-auburn bg-auburn/5 text-auburn'
+                                : 'border-charcoal/10 text-charcoal/40 hover:border-charcoal/20'
                           }`}
                         >
                           {f.split('/')[1].toUpperCase()}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 

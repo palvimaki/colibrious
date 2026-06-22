@@ -45,34 +45,50 @@ const createCanvas = (width: number, height: number): CanvasLike => {
   return canvas;
 };
 
-const get2d = (canvas: CanvasLike) => {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true }) as Canvas2D | null;
+const get2d = (canvas: CanvasLike, willReadFrequently = false) => {
+  const ctx = canvas.getContext('2d', { willReadFrequently }) as Canvas2D | null;
   if (!ctx) {
     throw new Error('Could not get canvas context');
   }
   return ctx;
 };
 
-const canvasToBlob = async (canvas: CanvasLike, type: PipelineOps['format'], quality: number) => {
+/** True when any per-pixel filter is active (i.e. we must read back pixels). */
+const hasPixelFilter = (ops: PipelineOps) =>
+  ops.brightness !== 100 || ops.contrast !== 100 || ops.grayscale || ops.sepia;
+
+const canvasToBlob = async (
+  canvas: CanvasLike,
+  type: PipelineOps['format'],
+  quality: number
+): Promise<{ blob: Blob; type: PipelineOps['format'] }> => {
   const normalizedQuality = type === 'image/png' ? undefined : quality;
 
-  if ('convertToBlob' in canvas) {
-    return canvas.convertToBlob({ type, quality: normalizedQuality });
+  const blob = await (async (): Promise<Blob | null> => {
+    if ('convertToBlob' in canvas) {
+      try {
+        return await canvas.convertToBlob({ type, quality: normalizedQuality });
+      } catch {
+        // convertToBlob rejected (often unsupported type) → fall through to fallback.
+        return null;
+      }
+    }
+    return new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, type, normalizedQuality)
+    );
+  })();
+
+  if (blob) {
+    return { blob, type };
   }
 
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (blob) {
-          resolve(blob);
-          return;
-        }
-        reject(new Error('Canvas toBlob failed'));
-      },
-      type,
-      normalizedQuality
-    );
-  });
+  // WebP encode is not supported by every browser (notably older Safari).
+  // Fall back to lossless PNG rather than failing the whole operation.
+  if (type === 'image/webp') {
+    return canvasToBlob(canvas, 'image/png', quality);
+  }
+
+  throw new Error('Canvas toBlob failed');
 };
 
 const sanitizeCrop = (source: ImageBitmap, crop?: CropRect): CropRect => {
@@ -93,7 +109,7 @@ const sanitizeResize = (resize: PipelineOps['resize'] | undefined, fallback: Cro
 });
 
 const applyPixelFilters = (canvas: CanvasLike, ops: PipelineOps) => {
-  if (ops.brightness === 100 && ops.contrast === 100 && !ops.grayscale && !ops.sepia) {
+  if (!hasPixelFilter(ops)) {
     return canvas;
   }
 
@@ -165,6 +181,8 @@ export interface PipelineResult {
   height: number;
   sizeEstimate: number;
   isPreview: boolean;
+  /** Format actually written (may differ from requested, e.g. WebP→PNG fallback). */
+  format: PipelineOps['format'];
 }
 
 export const runPipeline = async (
@@ -196,7 +214,9 @@ export const runPipeline = async (
   const outputWidth = isSideways ? scaledH : scaledW;
   const outputHeight = isSideways ? scaledW : scaledH;
   const outputCanvas = createCanvas(outputWidth, outputHeight);
-  const outputCtx = get2d(outputCanvas);
+  // Only request the CPU-backed (willReadFrequently) context when a pixel
+  // filter will actually read pixels; otherwise let the browser use the GPU.
+  const outputCtx = get2d(outputCanvas, hasPixelFilter(ops));
 
   if (ops.format === 'image/jpeg') {
     outputCtx.fillStyle = '#ffffff';
@@ -213,7 +233,7 @@ export const runPipeline = async (
   const filteredCanvas = applyPixelFilters(outputCanvas, ops);
   drawWatermark(filteredCanvas, ops);
 
-  const blob = await canvasToBlob(filteredCanvas, ops.format, ops.quality);
+  const { blob, type: format } = await canvasToBlob(filteredCanvas, ops.format, ops.quality);
   const sizeEstimate = isPreview ? Math.round(blob.size / (scale * scale)) : blob.size;
 
   return {
@@ -222,9 +242,39 @@ export const runPipeline = async (
     height: trueOutputHeight,
     sizeEstimate,
     isPreview,
+    format,
   };
 };
 
 export const decodeImage = async (file: Blob): Promise<ImageBitmap> => {
   return createImageBitmap(file);
+};
+
+let webpEncodeSupported: boolean | null = null;
+let webpCheck: Promise<boolean> | null = null;
+
+/**
+ * Whether this browser can *encode* WebP via canvas.toBlob/convertToBlob.
+ * (Decode support is far more widespread than encode support — notably spotty
+ * on older Safari.) Resolves once and caches.
+ */
+export const supportsWebpEncode = (): Promise<boolean> => {
+  if (webpEncodeSupported !== null) return Promise.resolve(webpEncodeSupported);
+  if (webpCheck) return webpCheck;
+
+  webpCheck = new Promise<boolean>((resolve) => {
+    try {
+      const probe = document.createElement('canvas');
+      probe.width = 1;
+      probe.height = 1;
+      probe.toBlob((blob) => {
+        webpEncodeSupported = !!blob;
+        resolve(webpEncodeSupported);
+      }, 'image/webp');
+    } catch {
+      webpEncodeSupported = false;
+      resolve(false);
+    }
+  });
+  return webpCheck;
 };

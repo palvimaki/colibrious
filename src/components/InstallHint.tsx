@@ -33,13 +33,11 @@ const IphoneCopy = ({ locale, brand }: { locale: 'fi' | 'en'; brand: string }) =
 
 export const InstallHint = () => {
   const t = useStrings();
-  const [installed, setInstalled] = useState(true);
+  const [installed, setInstalled] = useState<boolean>(() => isStandalone());
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
-    setInstalled(isStandalone());
-
     const onPrompt = (event: Event) => {
       event.preventDefault();
       setDeferred(event as BeforeInstallPromptEvent);
