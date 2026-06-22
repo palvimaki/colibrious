@@ -21,11 +21,10 @@ interface InstallBannerProps {
 
 export const InstallBanner = ({ targetId = 'install' }: InstallBannerProps) => {
   const t = useStrings();
-  const [eligible, setEligible] = useState(false);
+  const [eligible, setEligible] = useState<boolean>(() => !isStandalone() && isMobile());
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    setEligible(!isStandalone() && isMobile());
     const onInstalled = () => setEligible(false);
     window.addEventListener('appinstalled', onInstalled);
     return () => window.removeEventListener('appinstalled', onInstalled);

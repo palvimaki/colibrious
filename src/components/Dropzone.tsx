@@ -42,6 +42,8 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, className }
     if (e.target.files && e.target.files.length > 0) {
       onFilesSelected(Array.from(e.target.files));
     }
+    // Reset so selecting the same file again still fires onChange.
+    e.target.value = '';
   }, [onFilesSelected]);
 
   return (

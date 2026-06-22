@@ -1,4 +1,4 @@
-import type { CropRect, Rotation } from '../utils/pipeline';
+import type { CropRect, PipelineOps, Rotation } from '../utils/pipeline';
 
 export interface ImageTransformations {
   width?: number;
@@ -43,3 +43,23 @@ export const DEFAULT_TRANSFORMATIONS: ImageTransformations = {
   stripMetadata: true,
   watermarkOpacity: 0.5,
 };
+
+/** Shared mapping from UI transformations → canvas pipeline ops. */
+export const toPipelineOps = (transformations: ImageTransformations): PipelineOps => ({
+  crop: transformations.crop,
+  resize:
+    transformations.width && transformations.height
+      ? { w: transformations.width, h: transformations.height }
+      : undefined,
+  rotation: transformations.rotation,
+  flipH: transformations.flipHorizontal,
+  flipV: transformations.flipVertical,
+  brightness: transformations.brightness,
+  contrast: transformations.contrast,
+  grayscale: transformations.grayscale,
+  sepia: transformations.sepia,
+  format: transformations.format,
+  quality: transformations.quality,
+  watermarkText: transformations.watermarkText,
+  watermarkOpacity: transformations.watermarkOpacity,
+});

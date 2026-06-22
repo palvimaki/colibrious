@@ -33,6 +33,8 @@ export interface Strings {
   pdfShort: string;
   buildingPdf: string;
   combinePdfTitle: string;
+  buildingZip: string;
+  downloadAllTitle: string;
 
   // Drag overlay
   dropOverlay: string;
@@ -69,6 +71,7 @@ export interface Strings {
   brightnessAria: string;
   clear: string;
   lossless: string;
+  webpUnsupported: string;
 
   // ImageCard
   free: string;
@@ -108,6 +111,8 @@ export interface Strings {
   processingFailed: string;
   pdfPageFailed: string;
   pdfBuildFailed: string;
+  zipBuildFailed: string;
+  tooManyPixels: (mp: string) => string;
   closeErrorsAria: string;
   closeBtn: string;
 
@@ -119,6 +124,7 @@ export interface Strings {
   // Filenames
   pdfFilename: (n: number) => string;
   downloadSuffix: string;
+  zipFilename: (n: number) => string;
 }
 
 const fi: Strings = {
@@ -143,6 +149,8 @@ const fi: Strings = {
   pdfShort: 'PDF',
   buildingPdf: 'Luodaan PDF…',
   combinePdfTitle: 'Yhdistä kaikki kuvat yhteen PDF-tiedostoon',
+  buildingZip: 'Paketoidaan…',
+  downloadAllTitle: 'Lataa kaikki kuvat yhtenä zip-tiedostona',
 
   dropOverlay: 'Pudota kuvat mihin tahansa',
   dropOverlayHelp: 'PNG, JPEG tai WebP',
@@ -177,6 +185,7 @@ const fi: Strings = {
   brightnessAria: 'Kirkkaus',
   clear: 'Tyhjennä',
   lossless: 'Häviötön',
+  webpUnsupported: 'WebP-tallennusta ei tueta tässä selaimessa',
 
   free: 'Vapaa',
   cropApply: 'Käytä',
@@ -213,6 +222,8 @@ const fi: Strings = {
   processingFailed: 'Käsittely epäonnistui.',
   pdfPageFailed: 'PDF-sivun lisääminen epäonnistui.',
   pdfBuildFailed: 'PDF:n luonti epäonnistui.',
+  zipBuildFailed: 'Zip-tiedoston luonti epäonnistui.',
+  tooManyPixels: (mp) => `Kuva on liian suuri (${mp} MP). Yläraja 50 MP.`,
   closeErrorsAria: 'Sulje virheilmoitukset',
   closeBtn: 'Sulje',
 
@@ -222,6 +233,7 @@ const fi: Strings = {
 
   pdfFilename: (n) => `kuvankasittely-${n}-kuvaa.pdf`,
   downloadSuffix: 'kuvankasittely',
+  zipFilename: (n) => `kuvankasittely-${n}-kuvaa.zip`,
 };
 
 const en: Strings = {
@@ -246,6 +258,8 @@ const en: Strings = {
   pdfShort: 'PDF',
   buildingPdf: 'Building PDF…',
   combinePdfTitle: 'Combine all images into one PDF',
+  buildingZip: 'Zipping…',
+  downloadAllTitle: 'Download all images as a single zip',
 
   dropOverlay: 'Drop images anywhere',
   dropOverlayHelp: 'PNG, JPEG or WebP',
@@ -280,6 +294,7 @@ const en: Strings = {
   brightnessAria: 'Brightness',
   clear: 'Clear',
   lossless: 'Lossless',
+  webpUnsupported: 'WebP encoding is not supported in this browser',
 
   free: 'Free',
   cropApply: 'Apply',
@@ -316,6 +331,8 @@ const en: Strings = {
   processingFailed: 'Processing failed.',
   pdfPageFailed: 'Adding PDF page failed.',
   pdfBuildFailed: 'PDF creation failed.',
+  zipBuildFailed: 'Zip creation failed.',
+  tooManyPixels: (mp) => `Image too large (${mp} MP). Limit is 50 MP.`,
   closeErrorsAria: 'Close errors',
   closeBtn: 'Close',
 
@@ -325,6 +342,7 @@ const en: Strings = {
 
   pdfFilename: (n) => `colibrious-${n}-images.pdf`,
   downloadSuffix: 'colibrious',
+  zipFilename: (n) => `colibrious-${n}-images.zip`,
 };
 
 export const STRINGS: Record<Locale, Strings> = { fi, en };
